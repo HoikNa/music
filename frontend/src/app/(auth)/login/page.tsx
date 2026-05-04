@@ -2,7 +2,7 @@
 
 import { Suspense, useState } from "react"
 import Link from "next/link"
-import { useRouter, useSearchParams } from "next/navigation"
+import { useSearchParams } from "next/navigation"
 import { Sparkles } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
@@ -12,7 +12,6 @@ import { useAuthStore } from "@/stores/auth.store"
 import type { AuthTokens, User } from "@/types/api"
 
 function LoginForm() {
-  const router = useRouter()
   const searchParams = useSearchParams()
   const { setAccessTokenAndUser } = useAuthStore()
   const [email, setEmail] = useState("")
