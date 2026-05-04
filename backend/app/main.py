@@ -1,4 +1,5 @@
 import sentry_sdk
+from contextlib import asynccontextmanager
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 from mangum import Mangum
@@ -9,12 +10,25 @@ from app.routers import auth, submissions, uploads, personas, rankings, credits,
 if settings.sentry_dsn:
     sentry_sdk.init(dsn=settings.sentry_dsn, environment=settings.environment)
 
+
+@asynccontextmanager
+async def lifespan(app: FastAPI):
+    # cold start 시 stale submission 복구
+    try:
+        from app.services.scoring_service import recover_stale_submissions
+        recover_stale_submissions()
+    except Exception:
+        pass
+    yield
+
+
 app = FastAPI(
     title="Vertual Owl API",
     version="1.0.0",
     docs_url="/docs" if settings.environment == "development" else None,
     redoc_url=None,
     redirect_slashes=False,
+    lifespan=lifespan,
 )
 
 app.add_middleware(
@@ -40,4 +54,4 @@ def health():
     return {"status": "ok"}
 
 
-handler = Mangum(app, lifespan="off")
+handler = Mangum(app, lifespan="on")

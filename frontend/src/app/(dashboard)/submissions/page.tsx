@@ -23,6 +23,13 @@ export default function SubmissionsPage() {
   const { data, isLoading } = useQuery({
     queryKey: queryKeys.submissions.mine(),
     queryFn: () => api.get<PagedResponse<Submission>>("/submissions"),
+    refetchInterval: (query) => {
+      const items = query.state.data?.items ?? []
+      const hasActive = items.some((s) =>
+        s.status === "pending" || s.status === "validating" || s.status === "scoring"
+      )
+      return hasActive ? 3000 : false
+    },
   })
 
   const submissions = data?.items ?? []

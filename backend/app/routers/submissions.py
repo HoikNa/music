@@ -1,5 +1,5 @@
 import uuid
-from fastapi import APIRouter, Depends, HTTPException, status
+from fastapi import APIRouter, BackgroundTasks, Depends, HTTPException, status
 from pydantic import BaseModel
 from sqlmodel import Session, select
 
@@ -11,6 +11,7 @@ from app.models.score import BaseScore, PersonaScore, Feedback
 from app.models.persona import Persona
 from app.models.user import User
 from app.services import credit_service
+from app.services.scoring_service import run_mock_scoring
 from app.models.credit import CreditReason
 
 router = APIRouter(prefix="/submissions", tags=["submissions"])
@@ -78,6 +79,7 @@ def _serialize_submission(submission: Submission, db: Session) -> dict:
 @router.post("", status_code=201)
 def create_submission(
     body: SubmissionCreate,
+    background_tasks: BackgroundTasks,
     db: Session = Depends(get_db),
     current_user: User = Depends(get_current_user),
 ):
@@ -113,6 +115,7 @@ def create_submission(
 
     db.commit()
     db.refresh(submission)
+    background_tasks.add_task(run_mock_scoring, submission.id)
     return _serialize_submission(submission, db)
 
 
