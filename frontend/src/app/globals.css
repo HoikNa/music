@@ -6,8 +6,8 @@
 @theme inline {
   --color-background: var(--background);
   --color-foreground: var(--foreground);
-  --font-sans: var(--font-sans);
-  --font-mono: var(--font-mono);
+  --font-sans: "Pretendard", -apple-system, BlinkMacSystemFont, "Apple SD Gothic Neo", "Segoe UI", sans-serif;
+  --font-mono: "SF Mono", "JetBrains Mono", ui-monospace, SFMono-Regular, Menlo, monospace;
   --color-ring: var(--ring);
   --color-input: var(--input);
   --color-border: var(--border);
@@ -30,41 +30,73 @@
   --radius-xl: calc(var(--radius) * 1.4);
 }
 
-/* Vertual Owl — Dark Premium Theme */
+/* Vertual Owl Redesign — handoff tokens */
 :root {
-  --background: #0F0B2C;
-  --foreground: #F5F3FF;
-  --card: #1A1535;
-  --card-foreground: #F5F3FF;
-  --popover: #241E45;
-  --popover-foreground: #F5F3FF;
-  --primary: #7C5CFF;
-  --primary-foreground: #F5F3FF;
-  --secondary: #2E2758;
-  --secondary-foreground: #F5F3FF;
-  --muted: #241E45;
-  --muted-foreground: #A09BC0;
-  --accent: #FFB547;
-  --accent-foreground: #0F0B2C;
-  --destructive: #FF6B6B;
-  --border: #3D3660;
-  --input: #2E2758;
-  --ring: #7C5CFF;
-  --radius: 0.625rem;
+  --paper: #fafaf7;
+  --tint: #f4f3ee;
+  --tint-2: #edebe3;
+  --line: #e8e5dc;
+  --line-soft: #f0ede5;
+  --ink-0: #15140f;
+  --ink-1: #3a382f;
+  --ink-2: #6b695e;
+  --ink-3: #9b988c;
+  --ink-4: #c7c4b7;
+  --amber: #b8722c;
+  --amber-d: #8e5419;
+  --amber-l: #e5c99a;
+  --amber-bg: #f6ebd9;
+  --good: #4f6b3f;
+  --warn: #b8722c;
+  --bad: #9b3d2e;
+  --r-xs: 6px;
+  --r-sm: 10px;
+  --r-md: 14px;
+  --r-lg: 22px;
+  --r-xl: 32px;
+  --sh-sm: 0 1px 0 rgba(21, 20, 15, 0.04), 0 1px 2px rgba(21, 20, 15, 0.03);
+  --sh-md: 0 1px 0 rgba(21, 20, 15, 0.04), 0 8px 24px -8px rgba(21, 20, 15, 0.1);
+  --sh-lg: 0 30px 60px -20px rgba(21, 20, 15, 0.18);
+  --sidebar-w: 220px;
+  --topbar-h: 64px;
 
-  /* Brand extras */
-  --brand: #7C5CFF;
-  --brand-light: #9580FF;
-  --brand-bg: #EFE9FF;
-  --accent-pink: #FF7EC8;
-  --success: #3DD9A4;
-  --warning: #FFB547;
-  --error: #FF6B6B;
-  --info: #5BB8FF;
-  --text-muted: #A09BC0;
-  --text-disabled: #5A5480;
-  --border-subtle: #2A244E;
-  --bg-elevated: #241E45;
+  --background: var(--paper);
+  --foreground: var(--ink-0);
+  --card: #ffffff;
+  --card-foreground: var(--ink-0);
+  --popover: #ffffff;
+  --popover-foreground: var(--ink-0);
+  --primary: var(--ink-0);
+  --primary-foreground: var(--paper);
+  --secondary: var(--tint);
+  --secondary-foreground: var(--ink-0);
+  --muted: var(--tint);
+  --muted-foreground: var(--ink-2);
+  --accent: var(--amber);
+  --accent-foreground: #ffffff;
+  --destructive: var(--bad);
+  --border: var(--line);
+  --input: #ffffff;
+  --ring: var(--ink-1);
+  --radius: 0.5rem;
+
+  --brand: var(--amber);
+  --brand-light: var(--amber-l);
+  --brand-bg: var(--amber-bg);
+  --accent-pink: var(--amber);
+  --success: var(--good);
+  --warning: var(--amber);
+  --error: var(--bad);
+  --info: var(--ink-2);
+  --text-muted: var(--ink-2);
+  --text-disabled: var(--ink-4);
+  --border-subtle: var(--line-soft);
+  --bg-elevated: var(--tint);
+  --surface-solid: var(--card);
+  --surface-soft: var(--tint);
+  --shadow-sm: var(--sh-sm);
+  --shadow-md: var(--sh-md);
+  --shadow-lg: var(--sh-lg);
 }
 
 @layer base {
@@ -75,6 +107,239 @@
     @apply bg-background text-foreground antialiased;
     font-family: "Pretendard", -apple-system, BlinkMacSystemFont,
       "Apple SD Gothic Neo", "Malgun Gothic", sans-serif;
-    letter-spacing: -0.01em;
+    font-feature-settings: "ss01", "tnum";
+    letter-spacing: -0.011em;
+    line-height: 1.55;
+    min-height: 100vh;
+    background: var(--paper);
+  }
+
+  ::-webkit-scrollbar {
+    width: 10px;
+    height: 10px;
+  }
+
+  ::-webkit-scrollbar-track {
+    background: transparent;
+  }
+
+  ::-webkit-scrollbar-thumb {
+    background: var(--tint-2);
+    border: 2px solid var(--paper);
+    border-radius: 999px;
+  }
+}
+
+@layer components {
+  .app-shell {
+    background: var(--paper);
+  }
+
+  .app-card {
+    border: 1px solid var(--line);
+    border-radius: var(--r-md);
+    background: var(--card);
+    box-shadow: var(--sh-sm);
+  }
+
+  .app-card-lift {
+    border: 1px solid var(--line);
+    border-radius: var(--r-lg);
+    background: var(--card);
+    box-shadow: var(--sh-md);
+  }
+
+  .soft-panel {
+    border: 1px solid var(--line);
+    border-radius: var(--r-md);
+    background: var(--card);
+    box-shadow: var(--sh-sm);
+  }
+
+  .metric-label {
+    color: var(--ink-3);
+    font-size: 11px;
+    font-weight: 400;
+    letter-spacing: 0.1em;
+    text-transform: uppercase;
+  }
+
+  .metric-value {
+    color: var(--ink-0);
+    font-family: "Instrument Serif", Georgia, serif;
+    font-weight: 400;
+  }
+
+  .brand-gradient {
+    background: var(--ink-0);
+  }
+
+  .sunset-gradient {
+    background: var(--ink-0);
+  }
+
+  .creator-hero {
+    border-bottom: 1px solid var(--line);
+    background: transparent;
+  }
+
+  .auth-surface {
+    background:
+      linear-gradient(var(--paper), var(--paper)),
+      repeating-linear-gradient(0deg, transparent 0 39px, rgba(21,20,15,0.03) 39px 40px),
+      repeating-linear-gradient(90deg, transparent 0 39px, rgba(21,20,15,0.03) 39px 40px);
+    background-blend-mode: normal, multiply, multiply;
+  }
+
+  .h-display {
+    color: var(--ink-0);
+    font-family: "Instrument Serif", Georgia, "Pretendard", serif;
+    font-size: 44px;
+    font-weight: 400;
+    letter-spacing: -0.025em;
+    line-height: 1.05;
+  }
+
+  .h-display em,
+  .h-1 em {
+    color: var(--amber);
+    font-family: "Instrument Serif", Georgia, serif;
+    font-style: italic;
+  }
+
+  .h-1 {
+    color: var(--ink-0);
+    font-family: "Instrument Serif", Georgia, "Pretendard", serif;
+    font-size: 32px;
+    font-weight: 400;
+    letter-spacing: -0.02em;
+    line-height: 1.1;
+  }
+
+  .h-2 {
+    color: var(--ink-0);
+    font-family: "Instrument Serif", Georgia, "Pretendard", serif;
+    font-size: 22px;
+    font-weight: 400;
+    letter-spacing: -0.015em;
+    line-height: 1.2;
+  }
+
+  .label-mono {
+    color: var(--ink-3);
+    font-family: ui-monospace, "SF Mono", "JetBrains Mono", Menlo, monospace;
+    font-size: 11px;
+    font-weight: 400;
+    letter-spacing: 0.1em;
+    text-transform: uppercase;
+  }
+
+  .vo-btn {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    border-radius: 999px;
+    font-size: 13px;
+    font-weight: 500;
+    padding: 10px 18px;
+    transition: background 120ms, border-color 120ms, color 120ms;
+  }
+
+  .vo-btn-primary {
+    background: var(--ink-0);
+    color: var(--paper);
+  }
+
+  .vo-btn-primary:hover {
+    background: var(--ink-1);
+  }
+
+  .vo-btn-amber {
+    background: var(--amber);
+    color: #fff;
+  }
+
+  .vo-btn-amber:hover {
+    background: var(--amber-d);
+  }
+
+  .vo-btn-ghost {
+    background: var(--card);
+    border: 1px solid var(--line);
+    color: var(--ink-1);
+  }
+
+  .vo-btn-ghost:hover {
+    border-color: var(--ink-1);
+    color: var(--ink-0);
+  }
+
+  .vo-tag {
+    display: inline-flex;
+    align-items: center;
+    border: 1px solid var(--line-soft);
+    border-radius: 4px;
+    background: var(--tint);
+    color: var(--ink-2);
+    font-family: ui-monospace, "SF Mono", "JetBrains Mono", Menlo, monospace;
+    font-size: 10.5px;
+    letter-spacing: 0.06em;
+    padding: 3px 8px;
+    text-transform: uppercase;
+  }
+
+  .vo-tag-amber {
+    background: var(--amber-bg);
+    border-color: rgba(184, 114, 44, 0.18);
+    color: var(--amber-d);
+  }
+
+  .ph {
+    align-items: center;
+    background:
+      repeating-linear-gradient(135deg, transparent 0 9px, rgba(21,20,15,0.04) 9px 10px),
+      var(--tint);
+    border: 1px solid var(--line);
+    border-radius: var(--r-sm);
+    color: var(--ink-3);
+    display: flex;
+    font-family: ui-monospace, "SF Mono", "JetBrains Mono", Menlo, monospace;
+    font-size: 10px;
+    justify-content: center;
+    letter-spacing: 0.08em;
+    overflow: hidden;
+    position: relative;
+    text-transform: uppercase;
+  }
+
+  .ph-k1 {
+    background:
+      repeating-linear-gradient(135deg, transparent 0 9px, rgba(255,255,255,0.05) 9px 10px),
+      linear-gradient(135deg, var(--ink-0), #3a382f);
+  }
+
+  .ph-k2 {
+    background:
+      repeating-linear-gradient(135deg, transparent 0 9px, rgba(255,255,255,0.06) 9px 10px),
+      linear-gradient(135deg, var(--amber), #3a382f);
+  }
+
+  .ph-k3 {
+    background:
+      repeating-linear-gradient(135deg, transparent 0 9px, rgba(21,20,15,0.05) 9px 10px),
+      linear-gradient(135deg, var(--amber-bg), var(--tint-2));
+  }
+
+  .vo-progress {
+    background: var(--tint-2);
+    border-radius: 1px;
+    height: 2px;
+    overflow: hidden;
+  }
+
+  .vo-progress > span {
+    background: var(--ink-0);
+    display: block;
+    height: 100%;
   }
 }

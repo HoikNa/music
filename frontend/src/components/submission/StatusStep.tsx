@@ -1,4 +1,5 @@
 import type { SubmissionStatus } from "@/types/api"
+import { Check, X } from "lucide-react"
 
 const STEPS: { key: SubmissionStatus; label: string }[] = [
   { key: "pending", label: "대기중" },
@@ -15,7 +16,7 @@ export function StatusStep({ status }: { status: SubmissionStatus }) {
   if (status === "rejected") {
     return (
       <div className="flex items-center gap-2 text-sm" style={{ color: "var(--error)" }}>
-        <span className="text-base">✕</span> 반려됨
+        <X className="size-4" /> 반려됨
       </div>
     )
   }
@@ -37,7 +38,7 @@ export function StatusStep({ status }: { status: SubmissionStatus }) {
                   color: done || active ? "white" : "var(--text-disabled)",
                 }}
               >
-                {done ? "✓" : i + 1}
+                {done ? <Check className="size-3.5" /> : i + 1}
               </div>
               <span className="text-xs font-medium" style={{
                 color: active ? "var(--brand)" : done ? "var(--success)" : "var(--text-disabled)",

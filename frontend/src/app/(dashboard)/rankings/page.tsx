@@ -1,6 +1,7 @@
 "use client"
 
 import { useQuery } from "@tanstack/react-query"
+import { Radio, Trophy } from "lucide-react"
 import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { Skeleton } from "@/components/ui/skeleton"
 import { RankingRow } from "@/components/ranking/RankingRow"
@@ -30,12 +31,15 @@ export default function RankingsPage() {
   return (
     <div className="space-y-6">
       {/* Header */}
-      <div className="flex items-start justify-between flex-wrap gap-4">
+      <div className="app-card-lift flex flex-wrap items-start justify-between gap-4 p-6">
         <div>
-          <h1 className="text-2xl font-bold">랭킹 스코어보드</h1>
-          <p className="text-sm text-[var(--text-muted)] mt-1">주간 최고 점수 TOP 100</p>
+          <div className="mb-3 flex size-10 items-center justify-center rounded-full bg-[var(--brand-bg)] text-[var(--brand)]">
+            <Trophy className="size-5" />
+          </div>
+          <h1 className="text-2xl font-black">랭킹 스코어보드</h1>
+          <p className="mt-1 text-sm text-[var(--text-muted)]">주간 최고 점수 TOP 100</p>
         </div>
-        {ranking && (
+        {ranking?.period && (
           <ScoreboardTimer endAt={ranking.period.end_at} />
         )}
       </div>
@@ -57,9 +61,15 @@ export default function RankingsPage() {
             <Skeleton key={i} className="h-14 rounded-lg" />
           ))}
         </div>
-      ) : !ranking?.entries.length ? (
-        <div className="text-center py-20 text-[var(--text-muted)]">
-          <p className="text-4xl mb-4">🎤</p>
+      ) : !ranking?.period ? (
+        <div className="app-card py-20 text-center text-[var(--text-muted)]">
+          <Radio className="mx-auto mb-4 size-9 text-[var(--text-disabled)]" />
+          <p className="font-medium">진행 중인 랭킹 기간이 없습니다</p>
+          <p className="text-sm mt-1">새 라운드가 시작되면 스코어보드가 열립니다</p>
+        </div>
+      ) : !ranking.entries.length ? (
+        <div className="app-card py-20 text-center text-[var(--text-muted)]">
+          <Trophy className="mx-auto mb-4 size-9 text-[var(--text-disabled)]" />
           <p className="font-medium">아직 참가자가 없습니다</p>
           <p className="text-sm mt-1">첫 번째 도전자가 되세요!</p>
         </div>

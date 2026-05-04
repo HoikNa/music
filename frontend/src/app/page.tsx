@@ -1,4 +1,5 @@
 import Link from "next/link"
+import { Mic2, Trophy, Zap } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { Badge } from "@/components/ui/badge"
 
@@ -6,9 +7,9 @@ export default function LandingPage() {
   return (
     <div className="min-h-screen flex flex-col">
       {/* Header */}
-      <header className="sticky top-0 z-50 border-b border-[var(--border-subtle)] bg-[var(--background)]/90 backdrop-blur">
+      <header className="sticky top-0 z-50 border-b border-[var(--border-subtle)] bg-white/78 backdrop-blur-xl">
         <div className="max-w-6xl mx-auto px-6 h-16 flex items-center justify-between">
-          <span className="text-xl font-black tracking-tight" style={{ color: "var(--brand)" }}>
+          <span className="text-xl font-black tracking-tight text-[var(--foreground)]">
             Vertual Owl
           </span>
           <div className="flex items-center gap-3">
@@ -27,7 +28,7 @@ export default function LandingPage() {
       {/* Hero */}
       <section className="flex-1 flex flex-col items-center justify-center text-center px-6 py-24 relative overflow-hidden">
         <div className="absolute inset-0 pointer-events-none" style={{
-          background: "radial-gradient(ellipse 80% 60% at 50% -10%, rgba(124,92,255,0.25) 0%, transparent 70%)"
+          background: "radial-gradient(ellipse 80% 60% at 50% -10%, rgba(124,92,255,0.18) 0%, transparent 70%)"
         }} />
         <div className="relative z-10 max-w-3xl mx-auto">
           <Badge className="mb-6 text-xs font-bold tracking-widest" style={{ background: "var(--brand-bg)", color: "var(--brand)" }}>
@@ -51,7 +52,7 @@ export default function LandingPage() {
               </Button>
             </Link>
             <Link href="/rankings">
-              <Button size="lg" variant="outline" className="px-8">
+              <Button size="lg" variant="outline" className="bg-white/70 px-8">
                 랭킹 보기
               </Button>
             </Link>
@@ -66,30 +67,34 @@ export default function LandingPage() {
           <div className="grid md:grid-cols-3 gap-6">
             {[
               {
-                icon: "🎤",
+                icon: Mic2,
                 title: "페르소나 AI 심사",
                 desc: "김범수, 아이유, 박효신의 취향을 학습한 AI가 당신의 가창에 맞춤 피드백을 제공합니다.",
                 color: "var(--brand)",
               },
               {
-                icon: "🏆",
+                icon: Trophy,
                 title: "주간 랭킹 서바이벌",
                 desc: "오락실 스코어보드 방식의 실시간 경쟁. 주간 1위는 월간 왕중왕전 진출권을 획득합니다.",
                 color: "var(--accent)",
               },
               {
-                icon: "⚡",
+                icon: Zap,
                 title: "가수를 이겨라",
                 desc: "프로 가수가 설정한 마스터 스코어에 도전. 격파 시 실제 가수와의 1:1 멘토링 세션.",
                 color: "var(--accent-pink)",
               },
-            ].map((f) => (
-              <div key={f.title} className="rounded-xl p-6 border border-[var(--border)] bg-[var(--card)]">
-                <div className="text-4xl mb-4">{f.icon}</div>
+            ].map((f) => {
+              const Icon = f.icon
+              return (
+              <div key={f.title} className="app-card p-6">
+                <div className="mb-4 flex size-10 items-center justify-center rounded-full bg-[var(--brand-bg)]" style={{ color: f.color }}>
+                  <Icon className="size-5" />
+                </div>
                 <h3 className="text-lg font-bold mb-2">{f.title}</h3>
                 <p className="text-sm text-[var(--text-muted)] leading-relaxed">{f.desc}</p>
               </div>
-            ))}
+            )})}
           </div>
         </div>
       </section>

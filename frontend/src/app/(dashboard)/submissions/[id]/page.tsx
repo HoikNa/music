@@ -3,6 +3,7 @@
 import { useParams } from "next/navigation"
 import { useQuery } from "@tanstack/react-query"
 import Link from "next/link"
+import { FileAudio } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { Badge } from "@/components/ui/badge"
 import { Skeleton } from "@/components/ui/skeleton"
@@ -33,8 +34,8 @@ export default function SubmissionDetailPage() {
     return (
       <div className="space-y-6">
         <Skeleton className="h-8 w-48" />
-        <Skeleton className="h-32 rounded-xl" />
-        <Skeleton className="h-48 rounded-xl" />
+        <Skeleton className="h-32 rounded-lg" />
+        <Skeleton className="h-48 rounded-lg" />
       </div>
     )
   }
@@ -42,6 +43,7 @@ export default function SubmissionDetailPage() {
   if (!submission) {
     return (
       <div className="text-center py-20 text-[var(--text-muted)]">
+        <FileAudio className="mx-auto mb-3 size-10 text-[var(--text-disabled)]" />
         <p>제출 내역을 찾을 수 없습니다</p>
         <Link href="/submissions" className="mt-4 inline-block">
           <Button variant="outline">목록으로</Button>
@@ -72,7 +74,7 @@ export default function SubmissionDetailPage() {
 
       {/* 처리 중 */}
       {isProcessing && (
-        <div className="rounded-xl border border-[var(--border)] bg-[var(--card)] p-6 space-y-4">
+        <div className="app-card space-y-4 p-6">
           <p className="font-semibold text-sm">채점이 진행 중입니다...</p>
           <StatusStep status={submission.status} />
           <p className="text-xs text-[var(--text-muted)]">평균 30초 내 완료됩니다. 페이지를 닫아도 결과는 저장됩니다.</p>
@@ -90,7 +92,7 @@ export default function SubmissionDetailPage() {
 
       {/* 기본기 점수 */}
       {submission.base_score && (
-        <div className="rounded-xl border border-[var(--border)] bg-[var(--card)] p-6">
+        <div className="app-card p-6">
           <div className="flex items-center justify-between mb-5">
             <h2 className="font-bold">기본기 채점 결과</h2>
             <div className="text-3xl font-black tabular-nums" style={{ color: "var(--accent)" }}>

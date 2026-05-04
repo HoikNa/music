@@ -3,10 +3,11 @@
 import { Suspense, useState } from "react"
 import Link from "next/link"
 import { useRouter, useSearchParams } from "next/navigation"
+import { Sparkles } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { toast } from "sonner"
-import { api } from "@/lib/api"
+import { api, setAccessToken } from "@/lib/api"
 import { useAuthStore } from "@/stores/auth.store"
 import type { AuthTokens, User } from "@/types/api"
 
@@ -24,6 +25,7 @@ function LoginForm() {
     setLoading(true)
     try {
       const tokens = await api.post<AuthTokens>("/auth/login", { email, password })
+      setAccessToken(tokens.access_token)
       const user = await api.get<User>("/users/me")
       setAccessTokenAndUser(tokens.access_token, user)
       toast.success("로그인되었습니다")
@@ -37,17 +39,25 @@ function LoginForm() {
   }
 
   return (
-    <div className="min-h-screen flex items-center justify-center px-4"
-      style={{ background: "linear-gradient(135deg, var(--background) 0%, #1a1340 100%)" }}>
+    <div className="auth-surface flex min-h-screen items-center justify-center px-4 py-10">
       <div className="w-full max-w-md">
-        <div className="text-center mb-8">
-          <Link href="/" className="text-2xl font-black" style={{ color: "var(--brand)" }}>
-            Vertual Owl
+        <div className="mb-8 text-center">
+          <Link href="/" className="inline-flex items-center gap-3">
+            <span className="brand-gradient flex size-10 items-center justify-center rounded-lg text-white shadow-md">
+              <Sparkles className="size-5" />
+            </span>
+            <span className="text-2xl font-black text-[var(--foreground)]">
+              Vertual Owl
+            </span>
           </Link>
-          <p className="text-[var(--text-muted)] mt-2 text-sm">다시 만나서 반가워요</p>
+          <p className="mt-3 text-sm text-[var(--text-muted)]">다시 만나서 반가워요</p>
         </div>
 
-        <div className="rounded-2xl border border-[var(--border)] bg-[var(--card)] p-8">
+        <div className="app-card-lift p-8">
+          <div className="mb-6">
+            <h1 className="text-2xl font-black">로그인</h1>
+            <p className="mt-1 text-sm text-[var(--text-muted)]">보컬 심사와 랭킹 현황을 이어서 확인하세요.</p>
+          </div>
           <form onSubmit={handleSubmit} className="space-y-4">
             <div>
               <label className="text-sm font-medium mb-1.5 block">이메일</label>
@@ -71,9 +81,9 @@ function LoginForm() {
             </div>
             <Button
               type="submit"
-              className="w-full"
+              className="w-full rounded-full"
               disabled={loading}
-              style={{ background: "var(--brand)" }}
+              style={{ background: "linear-gradient(135deg, var(--brand), var(--accent-pink))" }}
             >
               {loading ? "로그인 중..." : "로그인"}
             </Button>
@@ -84,11 +94,11 @@ function LoginForm() {
               <div className="w-full border-t border-[var(--border)]" />
             </div>
             <div className="relative flex justify-center text-xs">
-              <span className="bg-[var(--card)] px-3 text-[var(--text-muted)]">또는</span>
+              <span className="bg-white px-3 text-[var(--text-muted)]">또는</span>
             </div>
           </div>
 
-          <Button variant="outline" className="w-full" disabled>
+          <Button variant="outline" className="w-full rounded-full bg-white/70" disabled>
             카카오로 로그인 (준비중)
           </Button>
         </div>

@@ -1,15 +1,18 @@
 import { NextResponse } from "next/server"
 import type { NextRequest } from "next/server"
 
-const PUBLIC_PATHS = ["/", "/login", "/register"]
 const ADMIN_PREFIX = "/admin"
 
-export function middleware(request: NextRequest) {
+export function proxy(request: NextRequest) {
   const { pathname } = request.nextUrl
   const token = request.cookies.get("refresh_token")?.value
 
-  const isPublic = PUBLIC_PATHS.includes(pathname)
   const isDashboard = pathname.startsWith("/dashboard") ||
+    pathname.startsWith("/ai-studio") ||
+    pathname.startsWith("/creator-studio") ||
+    pathname.startsWith("/contest") ||
+    pathname.startsWith("/distribution") ||
+    pathname.startsWith("/explore") ||
     pathname.startsWith("/submit") ||
     pathname.startsWith("/submissions") ||
     pathname.startsWith("/rankings") ||

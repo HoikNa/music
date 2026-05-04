@@ -3,11 +3,11 @@ import { Header } from "@/components/layout/Header"
 
 export default function DashboardLayout({ children }: { children: React.ReactNode }) {
   return (
-    <div className="flex min-h-screen">
+    <div className="app-shell flex min-h-screen text-[var(--foreground)]">
       <Sidebar />
-      <div className="flex-1 flex flex-col min-w-0">
+      <div className="flex min-w-0 flex-1 flex-col">
         <Header />
-        <main className="flex-1 p-6 max-w-5xl w-full mx-auto">
+        <main className="w-full flex-1 px-5 py-8 md:px-10 lg:px-14 lg:py-12">
           {children}
         </main>
       </div>

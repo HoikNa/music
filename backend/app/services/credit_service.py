@@ -8,8 +8,32 @@ from app.models.credit import Credit, CreditTransaction, CreditReason
 def get_or_create_credit(db: Session, user_id: uuid.UUID) -> Credit:
     credit = db.exec(select(Credit).where(Credit.user_id == user_id)).first()
     if not credit:
-        credit = Credit(user_id=user_id, balance=0)
+        credit = Credit(user_id=user_id, balance=10)
         db.add(credit)
+        db.flush()
+        db.add(
+            CreditTransaction(
+                user_id=user_id,
+                amount=10,
+                reason=CreditReason.bonus,
+                note="signup_bonus",
+            )
+        )
+        db.commit()
+        db.refresh(credit)
+    elif credit.balance == 0 and not db.exec(
+        select(CreditTransaction).where(CreditTransaction.user_id == user_id)
+    ).first():
+        credit.balance = 10
+        db.add(credit)
+        db.add(
+            CreditTransaction(
+                user_id=user_id,
+                amount=10,
+                reason=CreditReason.bonus,
+                note="signup_bonus_backfill",
+            )
+        )
         db.commit()
         db.refresh(credit)
     return credit

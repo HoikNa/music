@@ -15,6 +15,7 @@ export function getAccessToken() {
 const instance: AxiosInstance = axios.create({
   baseURL: process.env.NEXT_PUBLIC_API_URL ?? "http://localhost:8000/api/v1",
   headers: { "Content-Type": "application/json" },
+  withCredentials: true,
 })
 
 instance.interceptors.request.use((config) => {
@@ -29,8 +30,9 @@ instance.interceptors.response.use(
   async (error: AxiosError) => {
     if (error.response?.status === 401) {
       try {
+        const baseURL = process.env.NEXT_PUBLIC_API_URL ?? "http://localhost:8000/api/v1"
         const { data } = await axios.post(
-          `${process.env.NEXT_PUBLIC_API_URL}/auth/refresh`,
+          `${baseURL}/auth/refresh`,
           {},
           { withCredentials: true }
         )

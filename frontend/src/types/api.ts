@@ -3,7 +3,7 @@ export type AuthProvider = "email" | "kakao" | "google"
 export type SubmissionStatus = "pending" | "validating" | "scoring" | "scored" | "rejected"
 export type RankingMode = "ranking" | "challenge" | "both"
 export type PeriodType = "weekly" | "monthly" | "yearly"
-export type CreditReason = "signup_bonus" | "purchase" | "submission" | "reward"
+export type CreditReason = "signup_bonus" | "purchase" | "submission" | "reward" | "bonus" | "refund" | "admin"
 
 export interface User {
   id: string
@@ -85,7 +85,7 @@ export interface RankingPeriod {
 }
 
 export interface WeeklyRanking {
-  period: RankingPeriod
+  period: RankingPeriod | null
   entries: RankingEntry[]
   my_entry: RankingEntry | null
 }

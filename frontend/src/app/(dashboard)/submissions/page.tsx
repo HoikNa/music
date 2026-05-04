@@ -2,6 +2,7 @@
 
 import { useQuery } from "@tanstack/react-query"
 import Link from "next/link"
+import { FileAudio, Plus } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { Badge } from "@/components/ui/badge"
 import { Skeleton } from "@/components/ui/skeleton"
@@ -29,9 +30,15 @@ export default function SubmissionsPage() {
   return (
     <div className="space-y-6">
       <div className="flex items-center justify-between">
-        <h1 className="text-2xl font-bold">내 제출</h1>
+        <div>
+          <h1 className="text-2xl font-black">내 제출</h1>
+          <p className="mt-1 text-sm text-[var(--text-muted)]">제출한 보컬과 심사 상태를 확인합니다.</p>
+        </div>
         <Link href="/submit">
-          <Button style={{ background: "var(--brand)" }}>+ 새 제출</Button>
+          <Button className="rounded-full" style={{ background: "var(--brand)" }}>
+            <Plus className="size-4" />
+            새 제출
+          </Button>
         </Link>
       </div>
 
@@ -42,8 +49,8 @@ export default function SubmissionsPage() {
           ))}
         </div>
       ) : submissions.length === 0 ? (
-        <div className="text-center py-20 text-[var(--text-muted)] border border-dashed border-[var(--border)] rounded-xl">
-          <p className="text-4xl mb-4">🎵</p>
+        <div className="app-card py-20 text-center text-[var(--text-muted)]">
+          <FileAudio className="mx-auto mb-4 size-10 text-[var(--text-disabled)]" />
           <p className="font-medium">아직 제출한 음원이 없습니다</p>
           <p className="text-sm mt-1 mb-6">첫 번째 음원을 제출해보세요</p>
           <Link href="/submit">
@@ -56,7 +63,7 @@ export default function SubmissionsPage() {
             const st = STATUS_LABELS[sub.status]
             return (
               <Link key={sub.id} href={`/submissions/${sub.id}`}>
-                <div className="rounded-xl border border-[var(--border)] bg-[var(--card)] p-5 hover:border-[var(--brand-light)] transition-colors">
+                <div className="app-card p-5 transition-colors hover:border-[var(--brand-light)]">
                   <div className="flex items-start justify-between gap-4">
                     <div className="min-w-0">
                       <div className="flex items-center gap-2 flex-wrap">

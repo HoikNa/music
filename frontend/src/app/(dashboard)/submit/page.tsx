@@ -2,6 +2,7 @@
 
 import { useState } from "react"
 import { useRouter } from "next/navigation"
+import { CheckCircle2, FileAudio, ListChecks, Sparkles, UploadCloud } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { useQuery } from "@tanstack/react-query"
@@ -80,7 +81,13 @@ export default function SubmitPage() {
 
   return (
     <div className="max-w-2xl mx-auto space-y-6">
-      <h1 className="text-2xl font-bold">음원 제출</h1>
+      <div className="app-card-lift p-6">
+        <div className="mb-3 flex size-10 items-center justify-center rounded-full bg-[var(--brand-bg)] text-[var(--brand)]">
+          <UploadCloud className="size-5" />
+        </div>
+        <h1 className="text-2xl font-black">음원 제출</h1>
+        <p className="mt-1 text-sm text-[var(--text-muted)]">파일, 곡 정보, 페르소나를 선택하면 AI 심사가 시작됩니다.</p>
+      </div>
 
       {/* Step Indicators */}
       <div className="flex gap-2">
@@ -94,8 +101,10 @@ export default function SubmitPage() {
 
       {/* Step 1: 파일 업로드 */}
       {step === 1 && (
-        <div className="rounded-xl border border-dashed border-[var(--border)] bg-[var(--card)] p-8 text-center space-y-4">
-          <p className="text-4xl">🎵</p>
+        <div className="app-card space-y-4 border-dashed p-8 text-center">
+          <div className="mx-auto flex size-14 items-center justify-center rounded-full bg-[var(--brand-bg)] text-[var(--brand)]">
+            <FileAudio className="size-7" />
+          </div>
           <div>
             <p className="font-semibold mb-1">WAV 또는 FLAC 파일을 선택해주세요</p>
             <p className="text-xs text-[var(--text-muted)]">최대 200MB · 최대 10분</p>
@@ -115,8 +124,9 @@ export default function SubmitPage() {
             파일 선택
           </Button>
           {file && (
-            <p className="text-sm font-medium" style={{ color: "var(--success)" }}>
-              ✓ {file.name} ({(file.size / 1024 / 1024).toFixed(1)}MB)
+            <p className="inline-flex items-center gap-2 text-sm font-medium" style={{ color: "var(--success)" }}>
+              <CheckCircle2 className="size-4" />
+              {file.name} ({(file.size / 1024 / 1024).toFixed(1)}MB)
             </p>
           )}
           <Button
@@ -132,7 +142,7 @@ export default function SubmitPage() {
 
       {/* Step 2: 곡 정보 */}
       {step === 2 && (
-        <div className="rounded-xl border border-[var(--border)] bg-[var(--card)] p-6 space-y-4">
+        <div className="app-card space-y-5 p-6">
           <div>
             <label className="text-sm font-medium mb-1.5 block">곡 제목 *</label>
             <Input
@@ -162,6 +172,30 @@ export default function SubmitPage() {
               ))}
             </div>
           </div>
+          <div>
+            <label className="mb-1.5 block text-sm font-medium">참가 방식</label>
+            <div className="grid gap-2 sm:grid-cols-3">
+              {[
+                { value: "ranking", label: "랭킹" },
+                { value: "challenge", label: "챌린지" },
+                { value: "both", label: "둘 다" },
+              ].map(({ value, label }) => (
+                <button
+                  key={value}
+                  type="button"
+                  onClick={() => setRankingMode(value as "ranking" | "challenge" | "both")}
+                  className="rounded-lg border px-3 py-2 text-sm font-semibold transition-colors"
+                  style={{
+                    borderColor: rankingMode === value ? "var(--brand)" : "var(--border)",
+                    background: rankingMode === value ? "var(--brand-bg)" : "rgba(255,255,255,0.72)",
+                    color: rankingMode === value ? "var(--brand)" : "var(--text-muted)",
+                  }}
+                >
+                  {label}
+                </button>
+              ))}
+            </div>
+          </div>
           <div className="flex gap-3 pt-2">
             <Button variant="outline" onClick={() => setStep(1)} className="flex-1">이전</Button>
             <Button
@@ -179,8 +213,11 @@ export default function SubmitPage() {
       {/* Step 3: 페르소나 선택 */}
       {step === 3 && (
         <div className="space-y-4">
-          <div className="rounded-xl border border-[var(--border)] bg-[var(--card)] p-4">
-            <p className="text-sm font-medium mb-1">심사할 페르소나를 선택하세요</p>
+          <div className="app-card p-4">
+            <p className="mb-1 flex items-center gap-2 text-sm font-medium">
+              <Sparkles className="size-4 text-[var(--brand)]" />
+              심사할 페르소나를 선택하세요
+            </p>
             <p className="text-xs text-[var(--text-muted)]">최대 3명 선택 가능</p>
           </div>
           <div className="space-y-3">
@@ -210,8 +247,11 @@ export default function SubmitPage() {
       {/* Step 4: 확인 및 제출 */}
       {step === 4 && (
         <div className="space-y-4">
-          <div className="rounded-xl border border-[var(--border)] bg-[var(--card)] p-6 space-y-3 text-sm">
-            <h3 className="font-bold text-base mb-4">제출 내용 확인</h3>
+          <div className="app-card space-y-3 p-6 text-sm">
+            <h3 className="mb-4 flex items-center gap-2 text-base font-bold">
+              <ListChecks className="size-5 text-[var(--brand)]" />
+              제출 내용 확인
+            </h3>
             <div className="flex justify-between"><span className="text-[var(--text-muted)]">파일</span><span className="font-medium">{file?.name}</span></div>
             <div className="flex justify-between"><span className="text-[var(--text-muted)]">곡 제목</span><span className="font-medium">{title}</span></div>
             <div className="flex justify-between"><span className="text-[var(--text-muted)]">장르</span><span className="font-medium">{genre}</span></div>

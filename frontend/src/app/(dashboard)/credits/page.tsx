@@ -1,6 +1,7 @@
 "use client"
 
 import { useQuery } from "@tanstack/react-query"
+import { CreditCard, ReceiptText, Wallet } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { Skeleton } from "@/components/ui/skeleton"
 import { queryKeys } from "@/lib/queryKeys"
@@ -10,9 +11,12 @@ import type { CreditTransaction, PagedResponse } from "@/types/api"
 
 const CREDIT_REASON_LABELS: Record<string, string> = {
   signup_bonus: "가입 보너스",
+  bonus: "보너스",
   purchase: "충전",
   submission: "음원 제출",
   reward: "보상",
+  refund: "환불",
+  admin: "관리자 조정",
 }
 
 const PACKAGES = [
@@ -38,20 +42,26 @@ export default function CreditsPage() {
 
   return (
     <div className="space-y-6 max-w-xl">
-      <h1 className="text-2xl font-bold">크레딧</h1>
+      <div className="app-card-lift p-6">
+        <div className="mb-3 flex size-10 items-center justify-center rounded-full bg-[var(--brand-bg)] text-[var(--brand)]">
+          <Wallet className="size-5" />
+        </div>
+        <h1 className="text-2xl font-black">크레딧</h1>
+        <p className="mt-1 text-sm text-[var(--text-muted)]">AI 심사와 음원 제출에 사용하는 잔액입니다.</p>
+      </div>
 
       {/* Balance */}
-      <div className="rounded-xl border border-[var(--border)] bg-[var(--card)] p-6">
+      <div className="sunset-gradient rounded-lg p-6 text-white shadow-lg">
         <p className="text-sm text-[var(--text-muted)] mb-1">현재 잔액</p>
         {balanceLoading ? (
           <Skeleton className="h-10 w-24" />
         ) : (
-          <p className="text-4xl font-black tabular-nums" style={{ color: "var(--accent)" }}>
+          <p className="font-mono text-4xl font-black tabular-nums">
             {balanceData?.balance ?? 0}
-            <span className="text-lg font-normal text-[var(--text-muted)] ml-1">크레딧</span>
+            <span className="ml-1 text-lg font-normal text-white/80">크레딧</span>
           </p>
         )}
-        <p className="text-xs text-[var(--text-muted)] mt-2">음원 1회 제출 시 1크레딧 차감</p>
+        <p className="mt-2 text-xs text-white/80">음원 1회 제출 시 1크레딧 차감</p>
       </div>
 
       {/* Purchase */}
@@ -60,10 +70,11 @@ export default function CreditsPage() {
         <div className="grid gap-3">
           {PACKAGES.map(({ credits, price, popular }) => (
             <div key={credits}
-              className="flex items-center justify-between rounded-xl border p-4 transition-colors"
-              style={{ borderColor: popular ? "var(--brand)" : "var(--border)", background: "var(--card)" }}>
+              className="app-card flex items-center justify-between p-4 transition-colors"
+              style={{ borderColor: popular ? "var(--brand)" : "var(--border)" }}>
               <div>
                 <div className="flex items-center gap-2">
+                  <CreditCard className="size-4 text-[var(--brand)]" />
                   <p className="font-bold">{credits}크레딧</p>
                   {popular && (
                     <span className="text-xs px-2 py-0.5 rounded-full font-bold"
@@ -97,9 +108,12 @@ export default function CreditsPage() {
         ) : (
           <div className="space-y-2">
             {txData?.items.map((tx, i) => (
-              <div key={i} className="flex items-center justify-between px-4 py-3 rounded-lg bg-[var(--card)] border border-[var(--border)]">
+              <div key={i} className="app-card flex items-center justify-between px-4 py-3">
                 <div>
-                  <p className="text-sm font-medium">{CREDIT_REASON_LABELS[tx.reason] ?? tx.reason}</p>
+                  <p className="flex items-center gap-2 text-sm font-medium">
+                    <ReceiptText className="size-4 text-[var(--text-muted)]" />
+                    {CREDIT_REASON_LABELS[tx.reason] ?? tx.reason}
+                  </p>
                   <p className="text-xs text-[var(--text-muted)]">
                     {new Date(tx.created_at).toLocaleDateString("ko-KR")}
                   </p>
