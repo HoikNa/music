@@ -71,8 +71,10 @@ export default function DashboardPage() {
         <aside className="app-card-lift flex flex-col justify-between p-6">
           <div>
             <div className="label-mono">Featured Contest</div>
-            <h2 className="h-2 mt-4">Spring 2026 Contest</h2>
-            <p className="mt-2 text-sm leading-6 text-[var(--ink-2)]">
+            <h2 className="mt-4 text-2xl font-bold leading-tight" style={{ fontFamily: "var(--font-playfair), Georgia, serif" }}>
+              Spring 2026 Contest
+            </h2>
+            <p className="mt-4 text-sm leading-7 text-[var(--ink-2)]">
               한강의 밤을 주제로 한 신곡 제출 라운드가 일주일 남았습니다.
             </p>
           </div>
