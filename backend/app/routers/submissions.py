@@ -128,7 +128,7 @@ def list_submissions(
 ):
     stmt = (
         select(Submission)
-        .where(Submission.user_id == current_user.id, Submission.is_deleted == False)
+        .where(Submission.user_id == current_user.id, ~Submission.is_deleted)
         .order_by(Submission.created_at.desc())
         .offset(skip)
         .limit(limit + 1)

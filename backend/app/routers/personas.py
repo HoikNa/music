@@ -24,7 +24,7 @@ def _with_weights(persona: Persona, db: Session) -> dict:
 
 @router.get("")
 def list_personas(db: Session = Depends(get_db)):
-    personas = db.exec(select(Persona).where(Persona.is_active == True).order_by(Persona.sort_order)).all()
+    personas = db.exec(select(Persona).where(Persona.is_active).order_by(Persona.sort_order)).all()
     return {"items": [_with_weights(p, db) for p in personas]}
 
 

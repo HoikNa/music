@@ -8,7 +8,7 @@ from sqlmodel import Session, select, create_engine
 
 from app.config import settings
 from app.models.score import BaseScore, PersonaScore, Feedback
-from app.models.persona import PersonaWeight, PersonaDimension, Persona
+from app.models.persona import PersonaWeight, PersonaDimension
 from app.models.submission import Submission, SubmissionPersona, SubmissionStatus
 
 
@@ -257,7 +257,7 @@ def recover_stale_submissions() -> None:
             select(Submission).where(
                 Submission.status.in_([SubmissionStatus.validating, SubmissionStatus.scoring]),
                 Submission.updated_at < cutoff,
-                Submission.is_deleted == False,
+                ~Submission.is_deleted,
             )
         ).all()
         for submission in stale:
