@@ -71,7 +71,7 @@ def refresh_token(request: Request, response: Response, db: Session = Depends(ge
 
 @router.post("/logout")
 def logout(response: Response):
-    response.delete_cookie("refresh_token")
+    response.delete_cookie("refresh_token", path="/")
     return {"message": "Logged out"}
 
 
@@ -99,5 +99,5 @@ def _set_refresh_cookie(response: Response, token: str) -> None:
         secure=settings.environment != "development",
         samesite="lax",
         max_age=7 * 24 * 3600,
-        path="/api/v1/auth/refresh",
+        path="/",
     )

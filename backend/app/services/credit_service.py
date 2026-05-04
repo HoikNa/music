@@ -21,6 +21,7 @@ def deduct_credit(
     amount: int,
     reason: CreditReason,
     submission_id: uuid.UUID | None = None,
+    commit: bool = True,
 ) -> Credit:
     credit = get_or_create_credit(db, user_id)
     if credit.balance < amount:
@@ -36,8 +37,10 @@ def deduct_credit(
         submission_id=submission_id,
     )
     db.add(tx)
-    db.commit()
-    db.refresh(credit)
+
+    if commit:
+        db.commit()
+        db.refresh(credit)
     return credit
 
 

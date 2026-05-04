@@ -52,7 +52,14 @@ export default function SubmitPage() {
       )
       // Mock 환경에서는 S3 업로드 생략
       if (process.env.NEXT_PUBLIC_USE_MOCK !== "true") {
-        await fetch(presign.upload_url, { method: "PUT", body: file })
+        const uploadRes = await fetch(presign.upload_url, {
+          method: "PUT",
+          body: file,
+          headers: { "Content-Type": file.type },
+        })
+        if (!uploadRes.ok) {
+          throw new Error(`파일 업로드 실패 (${uploadRes.status})`)
+        }
       }
       const result = await api.post<{ submission_id: string }>("/submissions", {
         title,

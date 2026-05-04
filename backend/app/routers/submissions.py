@@ -81,8 +81,14 @@ def create_submission(
     db: Session = Depends(get_db),
     current_user: User = Depends(get_current_user),
 ):
-    credit_service.deduct_credit(db, current_user.id, 1, CreditReason.submission)
+    # persona 유효성 선검증 (credit 차감 전)
+    from app.models.persona import Persona
+    for pid in body.persona_ids:
+        persona = db.get(Persona, pid)
+        if not persona or not persona.is_active:
+            raise HTTPException(status_code=400, detail=f"Invalid persona: {pid}")
 
+    # submission, credit 차감, persona 연결을 단일 트랜잭션으로
     submission = Submission(
         user_id=current_user.id,
         title=body.title,
@@ -94,10 +100,16 @@ def create_submission(
         status=SubmissionStatus.pending,
     )
     db.add(submission)
-    db.flush()
+    db.flush()  # submission.id 확보
 
     for pid in body.persona_ids:
         db.add(SubmissionPersona(submission_id=submission.id, persona_id=pid))
+
+    # credit 차감 (commit=False → 위 작업과 같은 트랜잭션)
+    credit_service.deduct_credit(
+        db, current_user.id, 1, CreditReason.submission,
+        submission_id=submission.id, commit=False,
+    )
 
     db.commit()
     db.refresh(submission)
