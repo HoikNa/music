@@ -2,7 +2,6 @@
 
 import { useState } from "react"
 import Link from "next/link"
-import { useRouter } from "next/navigation"
 import { AxiosError } from "axios"
 import { Sparkles } from "lucide-react"
 import { Button } from "@/components/ui/button"
@@ -17,7 +16,6 @@ type ApiErrorBody = {
 }
 
 export default function RegisterPage() {
-  const router = useRouter()
   const { setAccessTokenAndUser } = useAuthStore()
   const [form, setForm] = useState({ email: "", nickname: "", password: "" })
   const [loading, setLoading] = useState(false)
@@ -41,8 +39,9 @@ export default function RegisterPage() {
       setAccessToken(tokens.access_token)
       const user = await api.get<User>("/users/me")
       setAccessTokenAndUser(tokens.access_token, user)
+      sessionStorage.setItem("access_token", tokens.access_token)
       toast.success("환영합니다! 크레딧 10개가 지급되었습니다")
-      router.replace("/dashboard")
+      window.location.replace("/dashboard")
     } catch (error) {
       const message = getRegisterErrorMessage(error)
       toast.error(message)

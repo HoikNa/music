@@ -28,8 +28,9 @@ function LoginForm() {
       setAccessToken(tokens.access_token)
       const user = await api.get<User>("/users/me")
       setAccessTokenAndUser(tokens.access_token, user)
+      sessionStorage.setItem("access_token", tokens.access_token)
       toast.success("로그인되었습니다")
-      router.replace(getSafeRedirect(searchParams.get("redirect")))
+      window.location.replace(getSafeRedirect(searchParams.get("redirect")))
     } catch {
       toast.error("이메일 또는 비밀번호를 확인해주세요")
     } finally {

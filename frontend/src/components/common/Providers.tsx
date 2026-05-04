@@ -25,22 +25,44 @@ export function Providers({ children }: { children: ReactNode }) {
   const { setAccessTokenAndUser, setUser } = useAuthStore()
 
   useEffect(() => {
-    // 새로고침 후 쿠키의 refresh_token으로 세션 복원
     const baseURL = process.env.NEXT_PUBLIC_API_URL ?? "http://localhost:8000/api/v1"
 
-    axios
-      .post<{ access_token: string }>(`${baseURL}/auth/refresh`, {}, { withCredentials: true })
-      .then(async ({ data }) => {
+    const restoreSession = async () => {
+      // 1순위: sessionStorage 토큰 (하드 리로드 후에도 유지)
+      const stored = sessionStorage.getItem("access_token")
+      if (stored) {
+        try {
+          setAccessToken(stored)
+          const { data: user } = await axios.get<User>(`${baseURL}/users/me`, {
+            headers: { Authorization: `Bearer ${stored}` },
+          })
+          setAccessTokenAndUser(stored, user)
+          return
+        } catch {
+          sessionStorage.removeItem("access_token")
+        }
+      }
+
+      // 2순위: refresh_token 쿠키 (same-site 환경)
+      try {
+        const { data } = await axios.post<{ access_token: string }>(
+          `${baseURL}/auth/refresh`,
+          {},
+          { withCredentials: true }
+        )
         setAccessToken(data.access_token)
+        sessionStorage.setItem("access_token", data.access_token)
         const { data: user } = await axios.get<User>(`${baseURL}/users/me`, {
           headers: { Authorization: `Bearer ${data.access_token}` },
         })
         setAccessTokenAndUser(data.access_token, user)
-      })
-      .catch(() => {
+      } catch {
         if (getAccessToken()) return
         setUser(null)
-      })
+      }
+    }
+
+    restoreSession()
   }, [setAccessTokenAndUser, setUser])
 
   return (
