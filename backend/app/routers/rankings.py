@@ -1,8 +1,8 @@
 import uuid
-from fastapi import APIRouter, Depends, Query, HTTPException
+from fastapi import APIRouter, Depends, Query
 from sqlmodel import Session, select
 
-from app.dependencies.auth import get_current_user, get_current_user_optional
+from app.dependencies.auth import get_current_user_optional
 from app.dependencies.db import get_db
 from app.helpers.db import fetch_by_id
 from app.models.ranking import RankingPeriod, RankingEntry, PeriodStatus, PeriodType

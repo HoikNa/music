@@ -2,7 +2,7 @@ import uuid
 from fastapi import Depends, HTTPException, status
 from fastapi.security import HTTPBearer, HTTPAuthorizationCredentials
 from jose import JWTError, jwt
-from sqlmodel import Session, select
+from sqlmodel import Session
 
 from app.config import settings
 from app.dependencies.db import get_db

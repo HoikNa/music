@@ -1,10 +1,9 @@
-import uuid
 from fastapi import APIRouter, Depends
 from sqlmodel import Session, select
 
 from app.dependencies.auth import get_current_user
 from app.dependencies.db import get_db
-from app.models.credit import Credit, CreditTransaction
+from app.models.credit import CreditTransaction
 from app.models.user import User
 from app.services.credit_service import get_or_create_credit
 

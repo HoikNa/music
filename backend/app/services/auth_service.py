@@ -1,6 +1,5 @@
 import uuid
 from datetime import datetime, timedelta
-from typing import Optional
 
 from fastapi import HTTPException, status
 from jose import jwt

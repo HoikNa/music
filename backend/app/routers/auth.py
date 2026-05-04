@@ -1,5 +1,4 @@
 from fastapi import APIRouter, Depends, Response, Request, HTTPException, status
-from fastapi.security import HTTPBearer
 from jose import JWTError, jwt
 from pydantic import BaseModel, EmailStr
 from sqlmodel import Session
