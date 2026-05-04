@@ -5,7 +5,7 @@ import { QueryClient, QueryClientProvider } from "@tanstack/react-query"
 import { ReactQueryDevtools } from "@tanstack/react-query-devtools"
 import { useState, useEffect, type ReactNode } from "react"
 import { Toaster } from "@/components/ui/sonner"
-import { setAccessToken } from "@/lib/api"
+import { getAccessToken, setAccessToken } from "@/lib/api"
 import { useAuthStore } from "@/stores/auth.store"
 import type { User } from "@/types/api"
 
@@ -38,6 +38,7 @@ export function Providers({ children }: { children: ReactNode }) {
         setAccessTokenAndUser(data.access_token, user)
       })
       .catch(() => {
+        if (getAccessToken()) return
         setUser(null)
       })
   }, [setAccessTokenAndUser, setUser])

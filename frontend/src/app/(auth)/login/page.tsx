@@ -2,7 +2,7 @@
 
 import { Suspense, useState } from "react"
 import Link from "next/link"
-import { useSearchParams } from "next/navigation"
+import { useRouter, useSearchParams } from "next/navigation"
 import { Sparkles } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
@@ -12,6 +12,7 @@ import { useAuthStore } from "@/stores/auth.store"
 import type { AuthTokens, User } from "@/types/api"
 
 function LoginForm() {
+  const router = useRouter()
   const searchParams = useSearchParams()
   const { setAccessTokenAndUser } = useAuthStore()
   const [email, setEmail] = useState("")
@@ -28,7 +29,7 @@ function LoginForm() {
       const user = await api.get<User>("/users/me")
       setAccessTokenAndUser(tokens.access_token, user)
       toast.success("로그인되었습니다")
-      window.location.assign(getSafeRedirect(searchParams.get("redirect")))
+      router.replace(getSafeRedirect(searchParams.get("redirect")))
     } catch {
       toast.error("이메일 또는 비밀번호를 확인해주세요")
     } finally {

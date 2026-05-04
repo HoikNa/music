@@ -7,21 +7,11 @@ export function proxy(request: NextRequest) {
   const { pathname } = request.nextUrl
   const token = request.cookies.get("refresh_token")?.value
 
-  const isDashboard = pathname.startsWith("/dashboard") ||
-    pathname.startsWith("/ai-studio") ||
-    pathname.startsWith("/creator-studio") ||
-    pathname.startsWith("/contest") ||
-    pathname.startsWith("/distribution") ||
-    pathname.startsWith("/explore") ||
-    pathname.startsWith("/submit") ||
-    pathname.startsWith("/submissions") ||
-    pathname.startsWith("/rankings") ||
-    pathname.startsWith("/personas") ||
-    pathname.startsWith("/credits")
   const isAdmin = pathname.startsWith(ADMIN_PREFIX)
 
-  // 미로그인 + 보호 경로 → 로그인
-  if ((isDashboard || isAdmin) && !token) {
+  // Admin routes are still blocked at the edge; app routes use AuthGate so
+  // login can navigate immediately with the in-memory access token.
+  if (isAdmin && !token) {
     const url = request.nextUrl.clone()
     url.pathname = "/login"
     url.searchParams.set("redirect", pathname)
