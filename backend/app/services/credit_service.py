@@ -15,8 +15,7 @@ def get_or_create_credit(db: Session, user_id: uuid.UUID) -> Credit:
             CreditTransaction(
                 user_id=user_id,
                 amount=10,
-                reason=CreditReason.bonus,
-                note="signup_bonus",
+                reason=CreditReason.signup_bonus,
             )
         )
         db.commit()
@@ -30,8 +29,7 @@ def get_or_create_credit(db: Session, user_id: uuid.UUID) -> Credit:
             CreditTransaction(
                 user_id=user_id,
                 amount=10,
-                reason=CreditReason.bonus,
-                note="signup_bonus_backfill",
+                reason=CreditReason.signup_bonus,
             )
         )
         db.commit()

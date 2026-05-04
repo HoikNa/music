@@ -99,7 +99,7 @@ export interface CreditTransaction {
 
 export interface AuthTokens {
   access_token: string
-  refresh_token: string
+  refresh_token?: string  // HttpOnly 쿠키로 전달되므로 응답 바디에 없을 수 있음
   token_type: string
 }
 

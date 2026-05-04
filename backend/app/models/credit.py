@@ -6,8 +6,10 @@ from sqlmodel import Field, SQLModel
 
 
 class CreditReason(str, Enum):
+    signup_bonus = "signup_bonus"
     purchase = "purchase"
     submission = "submission"
+    reward = "reward"
     refund = "refund"
     bonus = "bonus"
     admin = "admin"

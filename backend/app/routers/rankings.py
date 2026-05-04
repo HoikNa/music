@@ -2,7 +2,7 @@ import uuid
 from fastapi import APIRouter, Depends, Query, HTTPException
 from sqlmodel import Session, select
 
-from app.dependencies.auth import get_current_user
+from app.dependencies.auth import get_current_user, get_current_user_optional
 from app.dependencies.db import get_db
 from app.helpers.db import fetch_by_id
 from app.models.ranking import RankingPeriod, RankingEntry, PeriodStatus, PeriodType
@@ -31,6 +31,7 @@ def _serialize_entry(entry: RankingEntry, db: Session) -> dict:
 def get_weekly_ranking(
     persona_id: uuid.UUID | None = Query(default=None),
     db: Session = Depends(get_db),
+    current_user: User | None = Depends(get_current_user_optional),
 ):
     stmt = (
         select(RankingPeriod)
@@ -61,6 +62,17 @@ def get_weekly_ranking(
 
     serialized = [_serialize_entry(e, db) for e in entries]
 
+    my_entry = None
+    if current_user:
+        my_row = db.exec(
+            select(RankingEntry).where(
+                RankingEntry.period_id == period.id,
+                RankingEntry.user_id == current_user.id,
+            )
+        ).first()
+        if my_row:
+            my_entry = _serialize_entry(my_row, db)
+
     return {
         "period": {
             "start_at": period.start_date.isoformat(),
@@ -68,7 +80,7 @@ def get_weekly_ranking(
             "status": period.status,
         },
         "entries": serialized,
-        "my_entry": None,
+        "my_entry": my_entry,
     }
 
 
