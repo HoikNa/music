@@ -8,8 +8,8 @@ from app.config import settings
 from app.dependencies.db import get_db
 from app.models.user import User
 
-security = HTTPBearer()
-security_optional = HTTPBearer(auto_error=False)
+# auto_error=False로 통일 → 토큰 없을 때 403 대신 401 반환
+_bearer = HTTPBearer(auto_error=False)
 
 
 def _decode_token(token: str) -> dict:
@@ -24,9 +24,11 @@ def _decode_token(token: str) -> dict:
 
 
 async def get_current_user(
-    credentials: HTTPAuthorizationCredentials = Depends(security),
+    credentials: HTTPAuthorizationCredentials | None = Depends(_bearer),
     db: Session = Depends(get_db),
 ) -> User:
+    if not credentials:
+        raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="Not authenticated")
     payload = _decode_token(credentials.credentials)
     user_id: str | None = payload.get("sub")
     if not user_id:
@@ -39,7 +41,7 @@ async def get_current_user(
 
 
 async def get_current_user_optional(
-    credentials: HTTPAuthorizationCredentials | None = Depends(security_optional),
+    credentials: HTTPAuthorizationCredentials | None = Depends(_bearer),
     db: Session = Depends(get_db),
 ) -> User | None:
     if not credentials:
