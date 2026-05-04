@@ -1,15 +1,20 @@
+import sentry_sdk
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 from mangum import Mangum
 
 from app.config import settings
-from app.routers import auth, submissions, uploads, personas, rankings, credits
+from app.routers import auth, submissions, uploads, personas, rankings, credits, users
+
+if settings.sentry_dsn:
+    sentry_sdk.init(dsn=settings.sentry_dsn, environment=settings.environment)
 
 app = FastAPI(
     title="Vertual Owl API",
     version="1.0.0",
     docs_url="/docs" if settings.environment == "development" else None,
     redoc_url=None,
+    redirect_slashes=False,
 )
 
 app.add_middleware(
@@ -27,6 +32,7 @@ app.include_router(uploads.router, prefix=PREFIX)
 app.include_router(personas.router, prefix=PREFIX)
 app.include_router(rankings.router, prefix=PREFIX)
 app.include_router(credits.router, prefix=PREFIX)
+app.include_router(users.router, prefix=PREFIX)
 
 
 @app.get("/health")

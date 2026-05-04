@@ -5,8 +5,10 @@ from sqlmodel import Session, select
 
 from app.dependencies.auth import get_current_user
 from app.dependencies.db import get_db
-from app.helpers.db import fetch_by_id, fetch_list
+from app.helpers.db import fetch_by_id
 from app.models.submission import Submission, SubmissionPersona, SubmissionStatus, RankingMode
+from app.models.score import BaseScore, PersonaScore, Feedback
+from app.models.persona import Persona
 from app.models.user import User
 from app.services import credit_service
 from app.models.credit import CreditReason
@@ -24,15 +26,62 @@ class SubmissionCreate(BaseModel):
     persona_ids: list[uuid.UUID]
 
 
-@router.post("/", status_code=201)
+def _serialize_submission(submission: Submission, db: Session) -> dict:
+    base_score = db.exec(
+        select(BaseScore).where(BaseScore.submission_id == submission.id)
+    ).first()
+
+    persona_scores_out = []
+    if base_score:
+        ps_rows = db.exec(
+            select(PersonaScore).where(PersonaScore.submission_id == submission.id)
+        ).all()
+        for ps in ps_rows:
+            persona = db.get(Persona, ps.persona_id)
+            feedback = db.exec(
+                select(Feedback).where(Feedback.persona_score_id == ps.id)
+            ).first()
+            persona_scores_out.append({
+                "persona_id": str(ps.persona_id),
+                "persona_name": persona.display_name if persona else "",
+                "score": ps.persona_score,
+                "feedback": {
+                    "summary": feedback.summary,
+                    "strengths": feedback.strengths,
+                    "improvements": feedback.improvements,
+                } if feedback else None,
+            })
+
+    return {
+        "id": str(submission.id),
+        "submission_id": str(submission.id),
+        "title": submission.title,
+        "genre": submission.genre,
+        "audio_url": submission.audio_url,
+        "duration_sec": submission.duration_sec,
+        "status": submission.status,
+        "reject_reason": submission.reject_reason,
+        "ranking_mode": submission.ranking_mode,
+        "created_at": submission.created_at.isoformat(),
+        "base_score": {
+            "pitch": base_score.pitch_score,
+            "rhythm": base_score.rhythm_score,
+            "range": base_score.range_score,
+            "dynamic": base_score.dynamic_score,
+            "articulation": base_score.articulation_score,
+            "total": base_score.total_score,
+        } if base_score else None,
+        "persona_scores": persona_scores_out,
+    }
+
+
+@router.post("", status_code=201)
 def create_submission(
     body: SubmissionCreate,
     db: Session = Depends(get_db),
     current_user: User = Depends(get_current_user),
 ):
-    credit_service.deduct_credit(
-        db, current_user.id, 1, CreditReason.submission
-    )
+    credit_service.deduct_credit(db, current_user.id, 1, CreditReason.submission)
 
     submission = Submission(
         user_id=current_user.id,
@@ -52,17 +101,31 @@ def create_submission(
 
     db.commit()
     db.refresh(submission)
-    return submission
+    return _serialize_submission(submission, db)
 
 
-@router.get("/")
+@router.get("")
 def list_submissions(
     skip: int = 0,
     limit: int = 20,
     db: Session = Depends(get_db),
     current_user: User = Depends(get_current_user),
 ):
-    return fetch_list(db, Submission, skip=skip, limit=limit, user_id=current_user.id, is_deleted=False)
+    stmt = (
+        select(Submission)
+        .where(Submission.user_id == current_user.id, Submission.is_deleted == False)
+        .order_by(Submission.created_at.desc())
+        .offset(skip)
+        .limit(limit + 1)
+    )
+    rows = db.exec(stmt).all()
+    has_more = len(rows) > limit
+    items = rows[:limit]
+    return {
+        "items": [_serialize_submission(s, db) for s in items],
+        "has_more": has_more,
+        "next_cursor": str(items[-1].id) if has_more else None,
+    }
 
 
 @router.get("/{submission_id}")
@@ -74,7 +137,7 @@ def get_submission(
     submission = fetch_by_id(db, Submission, submission_id)
     if submission.user_id != current_user.id:
         raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Access denied")
-    return submission
+    return _serialize_submission(submission, db)
 
 
 @router.delete("/{submission_id}", status_code=204)

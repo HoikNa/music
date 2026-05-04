@@ -18,7 +18,12 @@ MAX_SIZE_BYTES = 50 * 1024 * 1024  # 50MB
 class PresignedUrlRequest(BaseModel):
     filename: str
     content_type: str
-    size_bytes: int
+    size_bytes: int = 0
+    file_size_bytes: int = 0  # frontend alias
+
+    @property
+    def effective_size(self) -> int:
+        return self.size_bytes or self.file_size_bytes
 
 
 class PresignedUrlResponse(BaseModel):
@@ -27,6 +32,7 @@ class PresignedUrlResponse(BaseModel):
     key: str
 
 
+@router.post("/presign", response_model=PresignedUrlResponse)
 @router.post("/presigned-url", response_model=PresignedUrlResponse)
 def get_presigned_url(
     body: PresignedUrlRequest,
@@ -34,7 +40,7 @@ def get_presigned_url(
 ):
     if body.content_type not in ALLOWED_CONTENT_TYPES:
         raise HTTPException(status_code=400, detail="Unsupported audio format")
-    if body.size_bytes > MAX_SIZE_BYTES:
+    if body.effective_size > MAX_SIZE_BYTES:
         raise HTTPException(status_code=400, detail="File too large (max 50MB)")
 
     ext = body.filename.rsplit(".", 1)[-1] if "." in body.filename else "mp3"

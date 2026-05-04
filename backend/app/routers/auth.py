@@ -76,13 +76,18 @@ def logout(response: Response):
 
 
 @router.get("/me")
-def me(current_user: User = Depends(get_current_user)):
+def me(current_user: User = Depends(get_current_user), db: Session = Depends(get_db)):
+    from app.services.credit_service import get_or_create_credit
+    credit = get_or_create_credit(db, current_user.id)
     return {
         "id": str(current_user.id),
         "email": current_user.email,
         "nickname": current_user.nickname,
         "role": current_user.role,
         "profile_image_url": current_user.profile_image_url,
+        "bio": current_user.bio,
+        "credit_balance": credit.balance,
+        "created_at": current_user.created_at.isoformat(),
     }
 
 

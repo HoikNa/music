@@ -11,8 +11,8 @@ from app.services.credit_service import get_or_create_credit
 router = APIRouter(prefix="/credits", tags=["credits"])
 
 
-@router.get("/me")
-def get_my_credits(
+@router.get("/balance")
+def get_balance(
     db: Session = Depends(get_db),
     current_user: User = Depends(get_current_user),
 ):
@@ -20,8 +20,8 @@ def get_my_credits(
     return {"balance": credit.balance}
 
 
-@router.get("/me/transactions")
-def get_my_transactions(
+@router.get("/transactions")
+def get_transactions(
     skip: int = 0,
     limit: int = 20,
     db: Session = Depends(get_db),
@@ -32,6 +32,27 @@ def get_my_transactions(
         .where(CreditTransaction.user_id == current_user.id)
         .order_by(CreditTransaction.created_at.desc())
         .offset(skip)
-        .limit(limit)
+        .limit(limit + 1)
     )
-    return db.exec(stmt).all()
+    rows = db.exec(stmt).all()
+    has_more = len(rows) > limit
+    items = rows[:limit]
+
+    # balance_after를 역순으로 계산
+    credit = get_or_create_credit(db, current_user.id)
+    running_balance = credit.balance
+    serialized = []
+    for tx in items:
+        serialized.append({
+            "delta": tx.amount,
+            "balance_after": running_balance,
+            "reason": tx.reason,
+            "created_at": tx.created_at.isoformat(),
+        })
+        running_balance -= tx.amount
+
+    return {
+        "items": serialized,
+        "has_more": has_more,
+        "next_cursor": None,
+    }
