@@ -1,0 +1,72 @@
+import uuid
+from datetime import datetime, timedelta
+from typing import Optional
+
+from fastapi import HTTPException, status
+from jose import jwt
+from passlib.context import CryptContext
+from sqlmodel import Session, select
+
+from app.config import settings
+from app.models.user import User, AuthProvider
+
+pwd_context = CryptContext(schemes=["bcrypt"], deprecated="auto")
+
+
+def hash_password(password: str) -> str:
+    return pwd_context.hash(password)
+
+
+def verify_password(plain: str, hashed: str) -> bool:
+    return pwd_context.verify(plain, hashed)
+
+
+def create_access_token(user_id: uuid.UUID) -> str:
+    expire = datetime.utcnow() + timedelta(minutes=settings.jwt_expire_minutes)
+    return jwt.encode(
+        {"sub": str(user_id), "exp": expire},
+        settings.jwt_secret,
+        algorithm=settings.jwt_algorithm,
+    )
+
+
+def create_refresh_token(user_id: uuid.UUID) -> str:
+    expire = datetime.utcnow() + timedelta(days=7)
+    return jwt.encode(
+        {"sub": str(user_id), "exp": expire, "type": "refresh"},
+        settings.jwt_secret,
+        algorithm=settings.jwt_algorithm,
+    )
+
+
+def register_user(db: Session, email: str, password: str, nickname: str) -> User:
+    existing = db.exec(select(User).where(User.email == email)).first()
+    if existing:
+        raise HTTPException(status_code=status.HTTP_409_CONFLICT, detail="Email already registered")
+
+    nick_taken = db.exec(select(User).where(User.nickname == nickname)).first()
+    if nick_taken:
+        raise HTTPException(status_code=status.HTTP_409_CONFLICT, detail="Nickname already taken")
+
+    user = User(
+        email=email,
+        hashed_password=hash_password(password),
+        nickname=nickname,
+        provider=AuthProvider.email,
+    )
+    db.add(user)
+    db.commit()
+    db.refresh(user)
+    return user
+
+
+def authenticate_user(db: Session, email: str, password: str) -> User:
+    user = db.exec(select(User).where(User.email == email)).first()
+    if not user or not user.hashed_password or not verify_password(password, user.hashed_password):
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            detail="Invalid email or password",
+        )
+    if user.is_deleted:
+        raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Account deactivated")
+    return user
