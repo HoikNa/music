@@ -27,9 +27,10 @@ jobs:
           cache: "pip"
           cache-dependency-path: backend/requirements.txt
 
-      - run: pip install -r requirements.txt
+      - run: pip install -r requirements-dev.txt
       - run: pip install ruff
       - run: ruff check app/
+      - run: pytest tests/ -v
 
   deploy:
     needs: check

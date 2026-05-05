@@ -29,3 +29,6 @@ class Settings(BaseSettings):
 
 
 settings = Settings()
+
+if settings.environment == "production" and settings.jwt_secret == "dev-secret-change-in-prod":
+    raise RuntimeError("JWT_SECRET must be set to a secure value in production")
