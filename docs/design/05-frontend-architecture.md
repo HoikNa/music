@@ -46,9 +46,9 @@ frontend/src/
 ├── components/
 │   ├── ui/                       # shadcn/ui 자동 생성 (수동 편집 금지)
 │   ├── auth/
-│   │   ├── AuthGate.tsx          # 인증 필요 페이지 래퍼
-│   │   └── Providers.tsx         # TanStack Query + Toast Provider
+│   │   └── AuthGate.tsx          # 인증 필요 페이지 래퍼
 │   ├── common/
+│   │   ├── Providers.tsx         # TanStack Query + Toast Provider + 세션 복원
 │   │   └── ScoreBar.tsx          # 5축 점수 막대 시각화
 │   └── layout/
 │       ├── Sidebar.tsx           # 220px 사이드바 (nav + 크레딧 블록 + 유저 정보)

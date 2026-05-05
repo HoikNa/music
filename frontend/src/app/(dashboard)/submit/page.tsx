@@ -23,12 +23,25 @@ export default function SubmitPage() {
   const [selectedPersonas, setSelectedPersonas] = useState<string[]>([])
   const [rankingMode, setRankingMode] = useState<"ranking" | "challenge" | "both">("both")
   const [loading, setLoading] = useState(false)
+  const [durationSec, setDurationSec] = useState(0)
 
   const { data: personasData } = useQuery({
     queryKey: queryKeys.personas.all,
     queryFn: () => api.get<{ items: Persona[] }>("/personas"),
   })
   const personas = personasData?.items ?? []
+
+  function handleFileChange(e: React.ChangeEvent<HTMLInputElement>) {
+    const selected = e.target.files?.[0] ?? null
+    setFile(selected)
+    if (!selected) return
+    const url = URL.createObjectURL(selected)
+    const audio = new Audio(url)
+    audio.addEventListener("loadedmetadata", () => {
+      setDurationSec(Math.round(audio.duration))
+      URL.revokeObjectURL(url)
+    })
+  }
 
   function togglePersona(id: string) {
     setSelectedPersonas((prev) =>
@@ -66,7 +79,7 @@ export default function SubmitPage() {
         title,
         genre,
         audio_url: presign.audio_url,
-        duration_sec: 180,
+        duration_sec: durationSec || 0,
         persona_ids: selectedPersonas,
         ranking_mode: rankingMode,
       })
@@ -107,12 +120,12 @@ export default function SubmitPage() {
           </div>
           <div>
             <p className="font-semibold mb-1">WAV 또는 FLAC 파일을 선택해주세요</p>
-            <p className="text-xs text-[var(--text-muted)]">최대 200MB · 최대 10분</p>
+            <p className="text-xs text-[var(--text-muted)]">최대 50MB · WAV / FLAC</p>
           </div>
           <input
             type="file"
             accept="audio/wav,audio/flac,.wav,.flac"
-            onChange={(e) => setFile(e.target.files?.[0] ?? null)}
+            onChange={handleFileChange}
             className="hidden"
             id="audio-file"
           />
