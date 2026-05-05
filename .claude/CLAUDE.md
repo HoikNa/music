@@ -1,10 +1,59 @@
 # 프로젝트 정보
-- 이름: music
+- 이름: Vertual Owl (레포: music)
 - 목적: AI 기반 한국어 음악 창작 플랫폼
-- 단계: 초기 개발
-- 배포 URL: 미정
-- API URL: 미정
+- 단계: 배포 완료 (데모 운영 중)
+- 배포 URL: https://frontend-eta-eosin.vercel.app
 - GitHub: git@github.com:HoikNa/music.git
+
+# 개발 명령어
+
+## 프론트엔드 (frontend/)
+```bash
+npm run dev      # 개발 서버 (port 3000)
+npm run build    # 프로덕션 빌드
+npm run lint     # ESLint
+```
+
+## 백엔드 (backend/)
+```bash
+source venv/bin/activate
+uvicorn app.main:app --reload --port 8000
+alembic upgrade head   # 마이그레이션 적용
+```
+
+# 프로젝트 구조
+```
+music/
+├── frontend/          # Next.js 15 App Router
+│   └── src/
+│       ├── app/
+│       │   ├── (auth)/        # 로그인·회원가입 (비인증)
+│       │   └── (dashboard)/   # 인증 필요 페이지들
+│       ├── components/        # auth/common/layout/persona/ranking/submission/ui
+│       ├── stores/            # Zustand (auth.store, ranking.store)
+│       ├── hooks/
+│       ├── lib/api.ts         # axios 인스턴스 + 토큰 갱신
+│       └── proxy.ts           # Next.js 미들웨어 (admin 라우트 보호)
+├── backend/           # FastAPI + Mangum (Lambda)
+│   └── app/
+│       ├── routers/   # auth/submissions/uploads/personas/rankings/credits/users
+│       ├── models/
+│       ├── services/
+│       └── main.py
+└── docs/              # PRD.md, design/
+```
+
+# 핵심 환경변수
+```
+NEXT_PUBLIC_API_URL=http://localhost:8000/api/v1
+NEXT_PUBLIC_USE_MOCK=false   # true 시 API 호출 없이 목 데이터 사용
+```
+
+# 비자명 패턴
+- **인증 흐름**: refresh_token은 HttpOnly 쿠키, access_token은 sessionStorage (탭 닫으면 소멸)
+- **목 모드**: `NEXT_PUBLIC_USE_MOCK=true` 설정 시 실 API 없이 개발 가능
+- **미들웨어**: `proxy.ts`는 `/admin` 라우트만 edge 보호, 일반 앱은 `AuthGate` 컴포넌트가 처리
+- **API docs**: 백엔드 `development` 환경에서만 `/docs` (Swagger) 노출
 
 # 역할
 시니어 풀스택 엔지니어로서 PRD부터 운영 준비까지 체계적으로 진행한다.
@@ -61,112 +110,6 @@
 
 ---
 
-# AI 협업 구조 (Claude Code + Codex)
-
-## 환경
-- Claude Code (WSL 터미널, claude CLI): **설계 / 아키텍처 / 리뷰 / 통합 / 의사결정**
-- Codex (Cursor IDE 확장, ChatGPT Plus): **세부 코드 구현 / 리팩토링**
-- 사용자: 두 AI 사이 중계 / 최종 의사결정
-
-## 위임 의사결정 (자동 판단)
-
-### Codex에 위임할 작업
-- 보일러플레이트 코드
-- 단순 CRUD 엔드포인트
-- 반복 패턴 컴포넌트
-- 테스트 코드 (요청 시)
-- 타입 정의 변환
-- 스타일링 (TailwindCSS)
-
-### Claude Code가 직접 작성할 작업
-- 시스템 아키텍처 결정
-- 핵심 비즈니스 로직
-- 인증 / 보안 / 권한
-- DB 스키마 설계
-- 외부 API 통합 (AWS, Kakao 등)
-- 성능 크리티컬 부분
-
-## 인계 프로토콜 (필수 준수)
-
-### 인계 시점 (자동 감지)
-다음 완료 시 자동으로 Codex 인계 멘트 출력:
-1. 설계 문서 작성 완료
-2. 명세서(Spec) 생성 완료
-3. "구현 단계 준비 완료" 판단 시
-4. 위임 적합 작업 요청 시
-
-### Claude Code → Codex 인계 멘트 (형식 엄수)
-```
-═══════════════════════════════════════
-🔄 작업 인계: Claude Code → Codex
-═══════════════════════════════════════
-
-✅ Claude Code 완료 작업:
-   - [완료한 작업 1줄 요약]
-
-📋 Codex 작업 명세:
-파일: [작업할 파일 경로]
-참조: @docs/specs/[명세서 파일명].md
-작업: [구체적 작업 내용]
-
-입력:
-- [입력 타입 / 데이터 정의]
-
-출력:
-- [출력 타입 / 결과 정의]
-
-요구사항:
-- [ ] TypeScript strict mode
-- [ ] 에러 처리 포함
-- [ ] 기존 코드 스타일 준수
-- [ ] [추가 요구사항]
-
-🎯 다음 단계:
-1. Cursor IDE 열기
-2. Codex 확장 패널로 이동 (우측 사이드바)
-3. 위 명세 복사 → Codex에 입력
-4. 결과 받으면 WSL 터미널로 복귀
-
-──────────────────────────────────────
-다음부터는 Codex가 코드를 작성합니다.
-──────────────────────────────────────
-```
-
-### Codex → Claude Code 역인계 멘트 (형식 엄수)
-사용자가 "Codex 완료", "검증해줘", 코드 붙여넣기 시 자동 출력:
-```
-═══════════════════════════════════════
-🔄 작업 복귀: Codex → Claude Code
-═══════════════════════════════════════
-
-📥 수신한 Codex 결과물:
-   - [파일명 / 코드 요약]
-
-🔍 검증 시작합니다.
-──────────────────────────────────────
-다시 Claude Code가 검증합니다.
-──────────────────────────────────────
-```
-
-## 작업 흐름 요약
-```
-사용자 요청
-    ↓
-Claude Code: 분석 + 위임 적합성 판단
-    ├── 직접 작성: 즉시 구현
-    └── 위임 적합: 명세서 작성 → 인계 멘트 출력
-                        ↓
-              사용자: Cursor Codex 확장에 입력
-                        ↓
-              Codex: 코드 구현
-                        ↓
-              사용자: 결과 Claude Code에 전달
-                        ↓
-              Claude Code: 검증 + 통합 결정
-```
-
----
-
 # 사용 가능한 Skills
 필요한 단계에서 명시적으로 호출:
 
@@ -178,8 +121,6 @@ Claude Code: 분석 + 위임 적합성 판단
 | /implement-backend | 4단계: 백엔드 구현 | 프론트 완료 후 |
 | /run-tests | 5단계: 테스트 + 통합 | 구현 완료 후 |
 | /production-ready | 6단계: 운영 준비 | MVP 검증 후 |
-| /delegate-to-codex | Codex 작업 위임 절차 | 위임 시 |
-| /verify-codex-output | Codex 결과 검증 | Codex 완료 후 |
 
 # 출력 규칙
 - 계획: bullet 형식, 핵심만

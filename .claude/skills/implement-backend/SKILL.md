@@ -51,17 +51,20 @@ pip install boto3 sentry-sdk
 
 ### `requirements.txt` 내용
 ```
-fastapi==0.115.0
-mangum==0.19.0
-sqlmodel==0.0.21
-alembic==1.13.0
-psycopg2-binary==2.9.9
-pydantic-settings==2.5.2
-python-dotenv==1.0.0
-python-jose[cryptography]==3.3.0
+fastapi==0.136.1
+mangum==0.21.0
+sqlmodel==0.0.38
+alembic==1.18.4
+psycopg2-binary==2.9.12
+pydantic-settings==2.14.0
+python-dotenv==1.2.2
+python-jose[cryptography]==3.5.0
 passlib[bcrypt]==1.7.4
-boto3==1.35.0
-sentry-sdk==2.14.0
+bcrypt==4.0.1
+boto3==1.43.2
+sentry-sdk==2.58.0
+uvicorn==0.46.0
+pydantic[email]>=2.0.0
 ```
 
 ### `.env.example` 내용
@@ -232,15 +235,6 @@ docs/
 # FastAPI 자동 생성 OpenAPI 스펙 저장
 curl http://localhost:8000/openapi.json > docs/openapi.json
 ```
-
-## Codex 활용 대상 (이 단계에서 위임 가능)
-- 단순 CRUD 엔드포인트 (라우터 파일)
-- Pydantic 스키마 (입출력 모델)
-- SQLModel 모델 (테이블 정의)
-- Alembic 마이그레이션 파일
-- 테스트용 seed 데이터
-
-위임 시 자동으로 인계 멘트 출력 후 /delegate-to-codex 호출.
 
 ## 완료 시
 "백엔드 구현 완료. 5단계 통합을 시작하려면 /run-tests 를 입력하세요."
