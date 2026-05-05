@@ -21,7 +21,10 @@ class Settings(BaseSettings):
 
     @property
     def cors_origins_list(self) -> list[str]:
-        return [o.strip() for o in self.cors_origins.split(",")]
+        origins = [o.strip() for o in self.cors_origins.split(",") if o.strip()]
+        if self.environment == "production":
+            origins = [o for o in origins if "localhost" not in o and "127.0.0.1" not in o]
+        return origins
 
     @property
     def s3_bucket(self) -> str:
