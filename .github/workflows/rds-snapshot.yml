@@ -1,0 +1,51 @@
+name: RDS Weekly Snapshot
+
+on:
+  schedule:
+    - cron: "0 18 * * 0"  # 매주 일요일 18:00 UTC (03:00 KST 월요일)
+  workflow_dispatch:       # 수동 실행 가능
+
+jobs:
+  snapshot:
+    runs-on: ubuntu-latest
+    env:
+      AWS_ACCESS_KEY_ID: ${{ secrets.AWS_ACCESS_KEY_ID }}
+      AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+      AWS_DEFAULT_REGION: ap-northeast-2
+      DB_INSTANCE: database-1
+      KEEP_SNAPSHOTS: 4   # 최근 4주치만 보존
+
+    steps:
+      - name: 스냅샷 생성
+        id: create
+        run: |
+          SNAPSHOT_ID="database-1-weekly-$(date +%Y%m%d)"
+          aws rds create-db-snapshot \
+            --db-instance-identifier $DB_INSTANCE \
+            --db-snapshot-identifier $SNAPSHOT_ID
+          echo "snapshot_id=$SNAPSHOT_ID" >> $GITHUB_OUTPUT
+          echo "스냅샷 생성: $SNAPSHOT_ID"
+
+      - name: 스냅샷 완료 대기
+        run: |
+          aws rds wait db-snapshot-completed \
+            --db-snapshot-identifier ${{ steps.create.outputs.snapshot_id }}
+          echo "완료: ${{ steps.create.outputs.snapshot_id }}"
+
+      - name: 오래된 스냅샷 정리
+        run: |
+          SNAPSHOTS=$(aws rds describe-db-snapshots \
+            --db-instance-identifier $DB_INSTANCE \
+            --snapshot-type manual \
+            --query "reverse(sort_by(DBSnapshots, &SnapshotCreateTime))[*].DBSnapshotIdentifier" \
+            --output text)
+
+          COUNT=0
+          for SNAP in $SNAPSHOTS; do
+            COUNT=$((COUNT + 1))
+            if [ $COUNT -gt $KEEP_SNAPSHOTS ]; then
+              echo "삭제: $SNAP"
+              aws rds delete-db-snapshot --db-snapshot-identifier $SNAP
+            fi
+          done
+          echo "보존 스냅샷 수: $(( COUNT < KEEP_SNAPSHOTS ? COUNT : KEEP_SNAPSHOTS ))"
