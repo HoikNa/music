@@ -77,16 +77,15 @@ def refresh_token(request: Request, response: Response, db: Session = Depends(ge
             raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="Invalid token type")
         import uuid
         jti = payload.get("jti", "")
-        if auth_service.is_refresh_token_revoked(db, jti):
-            raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="Token has been revoked")
         user = db.get(User, uuid.UUID(payload["sub"]))
         if not user or user.is_deleted:
             raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="User not found")
     except JWTError:
         raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="Invalid refresh token")
 
-    # 이전 토큰 revoke 후 새 토큰 발급 (rotation)
-    auth_service.revoke_refresh_token(db, jti)
+    # Atomic revoke — 0이면 이미 사용/폐기된 토큰
+    if auth_service.claim_refresh_token(db, jti) == 0:
+        raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="Token already used or revoked")
     new_access = auth_service.create_access_token(user.id)
     new_refresh = auth_service.create_refresh_token(user.id, db)
     _set_refresh_cookie(response, new_refresh)

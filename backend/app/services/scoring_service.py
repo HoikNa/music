@@ -2,6 +2,7 @@
 import uuid
 from datetime import datetime
 
+from sqlalchemy import update as sa_update
 from sqlmodel import Session, select, create_engine
 
 from app.config import settings
@@ -47,7 +48,7 @@ def _compute_persona_score(
     ).all()
 
     configured_dims = {w.dimension for w in weights}
-    missing = set(DIMENSION_FIELD_MAP) - {d.value for d in configured_dims}
+    missing = set(DIMENSION_FIELD_MAP) - configured_dims
     if missing:
         import logging
         logging.getLogger(__name__).warning(
@@ -77,7 +78,7 @@ def _compute_persona_score(
         weighted_breakdown=breakdown,
     )
     db.add(ps)
-    db.commit()
+    db.flush()
     db.refresh(ps)
     return ps
 
@@ -117,15 +118,18 @@ def run_scoring(submission_id: uuid.UUID) -> None:
     """BackgroundTasks에서 실행되는 실제 채점 워커."""
     engine = create_engine(settings.database_url)
     with Session(engine) as db:
-        submission = db.get(Submission, submission_id)
-        if not submission or submission.status != SubmissionStatus.pending:
+        # Atomic claim: pending → validating (중복 실행 방지)
+        result = db.execute(
+            sa_update(Submission)
+            .where(Submission.id == submission_id, Submission.status == SubmissionStatus.pending)
+            .values(status=SubmissionStatus.validating, updated_at=datetime.utcnow())
+        )
+        db.commit()
+        if result.rowcount == 0:
             return
+        submission = db.get(Submission, submission_id)
 
         try:
-            submission.status = SubmissionStatus.validating
-            submission.updated_at = datetime.utcnow()
-            db.add(submission)
-            db.commit()
 
             # 중복 실행 방지 — BaseScore가 이미 있으면 이전 실행이 완료한 것
             existing = db.exec(
@@ -167,7 +171,7 @@ def run_scoring(submission_id: uuid.UUID) -> None:
                 processing_sec=processing_sec,
             )
             db.add(base_score)
-            db.commit()
+            db.flush()
             db.refresh(base_score)
 
             # ── 페르소나별 점수 + 피드백 ──────────────────────────────────
@@ -199,7 +203,7 @@ def run_scoring(submission_id: uuid.UUID) -> None:
                     model_version="fallback-rule-v1" if used_fallback else "claude-opus-4-7",
                 )
                 db.add(feedback)
-                db.commit()
+                db.flush()
 
             # ── RankingEntry upsert ───────────────────────────────────────
             _upsert_ranking_entries(db, submission_id)

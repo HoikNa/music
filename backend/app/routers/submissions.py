@@ -149,6 +149,17 @@ def create_submission(
     if not parsed.path.startswith(expected_prefix) or _settings.s3_bucket not in parsed.netloc:
         raise HTTPException(status_code=400, detail="Invalid audio_url")
 
+    # S3 파일 존재 확인 (dev/test 환경 제외)
+    if _settings.environment not in ("development", "test"):
+        import boto3
+        key = parsed.path.lstrip("/")
+        try:
+            boto3.client("s3", region_name=_settings.aws_region).head_object(
+                Bucket=_settings.s3_bucket, Key=key
+            )
+        except Exception:
+            raise HTTPException(status_code=400, detail="Audio file not found in storage")
+
     # persona 유효성 선검증 (credit 차감 전)
     from app.models.persona import Persona
     for pid in body.persona_ids:

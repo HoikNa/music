@@ -1,39 +1,28 @@
 import uuid
+from datetime import datetime
 from fastapi import HTTPException, status
 from sqlalchemy import select as sa_select
+from sqlalchemy.dialects.postgresql import insert as pg_insert
 from sqlmodel import Session, select
 
 from app.models.credit import Credit, CreditTransaction, CreditReason
 
 
 def get_or_create_credit(db: Session, user_id: uuid.UUID) -> Credit:
+    now = datetime.utcnow()
+    stmt = (
+        pg_insert(Credit)
+        .values(id=uuid.uuid4(), user_id=user_id, balance=10, created_at=now, updated_at=now)
+        .on_conflict_do_nothing(index_elements=["user_id"])
+    )
+    result = db.execute(stmt)
+    db.flush()
     credit = db.exec(select(Credit).where(Credit.user_id == user_id)).first()
-    if not credit:
-        credit = Credit(user_id=user_id, balance=10)
-        db.add(credit)
+    # 새로 삽입된 경우에만 signup bonus 트랜잭션 기록
+    if result.rowcount:
+        db.add(CreditTransaction(user_id=user_id, amount=10, reason=CreditReason.signup_bonus))
         db.flush()
-        db.add(
-            CreditTransaction(
-                user_id=user_id,
-                amount=10,
-                reason=CreditReason.signup_bonus,
-            )
-        )
-        db.flush()
-    elif credit.balance == 0 and not db.exec(
-        select(CreditTransaction).where(CreditTransaction.user_id == user_id)
-    ).first():
-        credit.balance = 10
-        db.add(credit)
-        db.add(
-            CreditTransaction(
-                user_id=user_id,
-                amount=10,
-                reason=CreditReason.signup_bonus,
-            )
-        )
-        db.flush()
-    return credit
+    return credit  # type: ignore[return-value]
 
 
 def deduct_credit(

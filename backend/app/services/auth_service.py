@@ -4,6 +4,7 @@ from datetime import datetime, timedelta
 from fastapi import HTTPException, status
 from jose import jwt
 from passlib.context import CryptContext
+from sqlalchemy import update as sa_update
 from sqlmodel import Session, select
 
 from app.config import settings
@@ -24,7 +25,7 @@ def verify_password(plain: str, hashed: str) -> bool:
 def create_access_token(user_id: uuid.UUID) -> str:
     expire = datetime.utcnow() + timedelta(minutes=settings.jwt_expire_minutes)
     return jwt.encode(
-        {"sub": str(user_id), "exp": expire},
+        {"sub": str(user_id), "exp": expire, "type": "access"},
         settings.jwt_secret,
         algorithm=settings.jwt_algorithm,
     )
@@ -42,6 +43,17 @@ def create_refresh_token(user_id: uuid.UUID, db: Session | None = None) -> str:
         db.add(RefreshToken(jti=jti, user_id=user_id, expires_at=expire))
         db.commit()
     return token
+
+
+def claim_refresh_token(db: Session, jti: str) -> int:
+    """Atomically mark refresh token as revoked. Returns 1 if claimed, 0 if already revoked/missing."""
+    result = db.execute(
+        sa_update(RefreshToken)
+        .where(RefreshToken.jti == jti, RefreshToken.is_revoked.is_(False))
+        .values(is_revoked=True)
+    )
+    db.commit()
+    return result.rowcount
 
 
 def revoke_refresh_token(db: Session, jti: str) -> None:
