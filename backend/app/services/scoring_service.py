@@ -113,7 +113,6 @@ def run_scoring(submission_id: uuid.UUID) -> None:
             submission.updated_at = datetime.utcnow()
             db.add(submission)
             db.commit()
-            print(f"[scoring] validating submission={submission_id}", flush=True)
 
             # 중복 실행 방지
             existing = db.exec(
@@ -129,11 +128,9 @@ def run_scoring(submission_id: uuid.UUID) -> None:
             db.commit()
 
             # ── 실제 오디오 분석 ──────────────────────────────────────────
-            print(f"[scoring] starting audio analysis url={submission.audio_url[:60]}", flush=True)
             try:
                 scores = audio_analyzer.analyze(submission.audio_url)
                 processing_sec = int(scores.pop("_processing_sec", 0))
-                print(f"[scoring] analysis done scores={scores}", flush=True)
             except Exception as e:
                 raise RuntimeError(f"오디오 분석 실패: {e}") from e
 
@@ -191,9 +188,6 @@ def run_scoring(submission_id: uuid.UUID) -> None:
             db.commit()
 
         except Exception:
-            import traceback
-            print(f"[scoring] FAILED submission={submission_id}", flush=True)
-            traceback.print_exc()
             db.rollback()
             _mark_rejected(db, submission_id, "채점 중 오류가 발생했습니다. 크레딧이 환불됩니다.")
 
