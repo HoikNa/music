@@ -217,7 +217,6 @@ def run_scoring(submission_id: uuid.UUID) -> None:
 
 def _upsert_ranking_entries(db: Session, submission_id: uuid.UUID) -> None:
     """채점 완료 후 각 페르소나의 활성 RankingPeriod에 RankingEntry를 upsert하고 순위를 재계산."""
-    from datetime import date
     submission = db.get(Submission, submission_id)
     if not submission:
         return
