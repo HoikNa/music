@@ -4,14 +4,15 @@ import uuid
 import pytest
 
 
-SUBMISSION_PAYLOAD = {
-    "title": "테스트 곡",
-    "genre": "발라드",
-    "audio_url": "https://bucket.s3.ap-northeast-2.amazonaws.com/audio/test.wav",
-    "duration_sec": 180,
-    "ranking_mode": "both",
-    "persona_ids": [],  # conftest에서 페르소나 없이 테스트 (유효성 검증 전)
-}
+def _submission_payload(user_id: str) -> dict:
+    return {
+        "title": "테스트 곡",
+        "genre": "발라드",
+        "audio_url": f"https://vertualowl-audio.s3.ap-northeast-2.amazonaws.com/audio/{user_id}/test.wav",
+        "duration_sec": 180,
+        "ranking_mode": "both",
+        "persona_ids": [],
+    }
 
 
 def _create_persona(client, auth_headers):
@@ -46,9 +47,9 @@ def test_list_submissions_unauthenticated(client):
 
 
 @patch("app.routers.submissions.run_scoring")
-def test_create_submission(mock_scoring, client, auth_headers):
+def test_create_submission(mock_scoring, client, auth_headers, registered_user):
     persona_id = _create_persona(client, auth_headers)
-    payload = {**SUBMISSION_PAYLOAD, "persona_ids": [persona_id]}
+    payload = {**_submission_payload(registered_user["id"]), "persona_ids": [persona_id]}
 
     res = client.post("/api/v1/submissions", json=payload, headers=auth_headers)
     assert res.status_code == 201
@@ -61,11 +62,11 @@ def test_create_submission(mock_scoring, client, auth_headers):
 
 
 @patch("app.routers.submissions.run_scoring")
-def test_get_submission(mock_scoring, client, auth_headers):
+def test_get_submission(mock_scoring, client, auth_headers, registered_user):
     persona_id = _create_persona(client, auth_headers)
     create_res = client.post(
         "/api/v1/submissions",
-        json={**SUBMISSION_PAYLOAD, "persona_ids": [persona_id]},
+        json={**_submission_payload(registered_user["id"]), "persona_ids": [persona_id]},
         headers=auth_headers,
     )
     submission_id = create_res.json()["id"]
@@ -76,18 +77,18 @@ def test_get_submission(mock_scoring, client, auth_headers):
 
 
 @patch("app.routers.submissions.run_scoring")
-def test_create_submission_invalid_persona(mock_scoring, client, auth_headers):
-    payload = {**SUBMISSION_PAYLOAD, "persona_ids": [str(uuid.uuid4())]}
+def test_create_submission_invalid_persona(mock_scoring, client, auth_headers, registered_user):
+    payload = {**_submission_payload(registered_user["id"]), "persona_ids": [str(uuid.uuid4())]}
     res = client.post("/api/v1/submissions", json=payload, headers=auth_headers)
     assert res.status_code == 400
 
 
 @patch("app.routers.submissions.run_scoring")
-def test_get_submission_other_user_forbidden(mock_scoring, client, auth_headers):
+def test_get_submission_other_user_forbidden(mock_scoring, client, auth_headers, registered_user):
     persona_id = _create_persona(client, auth_headers)
     create_res = client.post(
         "/api/v1/submissions",
-        json={**SUBMISSION_PAYLOAD, "persona_ids": [persona_id]},
+        json={**_submission_payload(registered_user["id"]), "persona_ids": [persona_id]},
         headers=auth_headers,
     )
     submission_id = create_res.json()["id"]

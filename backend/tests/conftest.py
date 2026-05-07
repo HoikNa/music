@@ -41,7 +41,9 @@ def registered_user(client):
     })
     assert res.status_code == 201
     token = res.json()["access_token"]
-    return {"token": token, "email": "user@example.com", "nickname": "testuser"}
+    me = client.get("/api/v1/users/me", headers={"Authorization": f"Bearer {token}"})
+    user_id = me.json()["id"]
+    return {"token": token, "email": "user@example.com", "nickname": "testuser", "id": user_id}
 
 
 @pytest.fixture
