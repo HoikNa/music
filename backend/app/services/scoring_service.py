@@ -195,7 +195,7 @@ def run_scoring(submission_id: uuid.UUID) -> None:
                     summary=feedback_data["summary"],
                     strengths=feedback_data["strengths"],
                     improvements=feedback_data["improvements"],
-                    model_version="fallback-rule-v1" if used_fallback else "claude-haiku-4-5-20251001",
+                    model_version="fallback-rule-v1" if used_fallback else "claude-opus-4-7",
                 )
                 db.add(feedback)
                 db.commit()
