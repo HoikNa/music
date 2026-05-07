@@ -118,11 +118,17 @@ def run_scoring(submission_id: uuid.UUID) -> None:
             db.add(submission)
             db.commit()
 
-            # 중복 실행 방지
+            # 중복 실행 방지 — BaseScore가 이미 있으면 이전 실행이 완료한 것
             existing = db.exec(
                 select(BaseScore).where(BaseScore.submission_id == submission_id)
             ).first()
             if existing:
+                submission = db.get(Submission, submission_id)
+                if submission and submission.status != SubmissionStatus.scored:
+                    submission.status = SubmissionStatus.scored
+                    submission.updated_at = datetime.utcnow()
+                    db.add(submission)
+                    db.commit()
                 return
 
             submission = db.get(Submission, submission_id)
@@ -172,7 +178,8 @@ def run_scoring(submission_id: uuid.UUID) -> None:
                     genre=submission.genre,
                     title=submission.title,
                 )
-                if feedback_data is None:
+                used_fallback = feedback_data is None
+                if used_fallback:
                     feedback_data = _fallback_feedback(dim_scores)
 
                 feedback = Feedback(
@@ -180,7 +187,7 @@ def run_scoring(submission_id: uuid.UUID) -> None:
                     summary=feedback_data["summary"],
                     strengths=feedback_data["strengths"],
                     improvements=feedback_data["improvements"],
-                    model_version="claude-haiku-4-5-20251001",
+                    model_version="fallback-rule-v1" if used_fallback else "claude-haiku-4-5-20251001",
                 )
                 db.add(feedback)
                 db.commit()
