@@ -1,4 +1,5 @@
 import sentry_sdk
+import uuid
 from contextlib import asynccontextmanager
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
@@ -54,4 +55,12 @@ def health():
     return {"status": "ok"}
 
 
-handler = Mangum(app, lifespan="on")
+asgi_handler = Mangum(app, lifespan="on")
+
+
+def handler(event, context):
+    if event.get("source") == "vertualowl.scoring":
+        from app.services.scoring_service import run_scoring
+        run_scoring(uuid.UUID(event["submission_id"]))
+        return {"ok": True}
+    return asgi_handler(event, context)

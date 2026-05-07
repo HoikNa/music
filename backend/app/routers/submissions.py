@@ -1,3 +1,6 @@
+import json
+import logging
+import os
 import uuid
 from fastapi import APIRouter, BackgroundTasks, Depends, HTTPException, status
 from pydantic import BaseModel
@@ -15,6 +18,7 @@ from app.services.scoring_service import run_scoring
 from app.models.credit import CreditReason
 
 router = APIRouter(prefix="/submissions", tags=["submissions"])
+logger = logging.getLogger(__name__)
 
 
 class SubmissionCreate(BaseModel):
@@ -76,6 +80,27 @@ def _serialize_submission(submission: Submission, db: Session) -> dict:
     }
 
 
+def _enqueue_scoring(submission_id: uuid.UUID, background_tasks: BackgroundTasks) -> None:
+    function_name = os.getenv("AWS_LAMBDA_FUNCTION_NAME")
+    if function_name:
+        import boto3
+
+        try:
+            boto3.client("lambda").invoke(
+                FunctionName=function_name,
+                InvocationType="Event",
+                Payload=json.dumps({
+                    "source": "vertualowl.scoring",
+                    "submission_id": str(submission_id),
+                }).encode("utf-8"),
+            )
+        except Exception:
+            logger.exception("Failed to enqueue scoring for submission %s", submission_id)
+        return
+
+    background_tasks.add_task(run_scoring, submission_id)
+
+
 @router.post("", status_code=201)
 def create_submission(
     body: SubmissionCreate,
@@ -115,7 +140,7 @@ def create_submission(
 
     db.commit()
     db.refresh(submission)
-    background_tasks.add_task(run_scoring, submission.id)
+    _enqueue_scoring(submission.id, background_tasks)
     return _serialize_submission(submission, db)
 
 
