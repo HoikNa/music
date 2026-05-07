@@ -8,14 +8,19 @@ on:
 jobs:
   snapshot:
     runs-on: ubuntu-latest
+    permissions:
+      id-token: write
+      contents: read
     env:
-      AWS_ACCESS_KEY_ID: ${{ secrets.AWS_ACCESS_KEY_ID }}
-      AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
-      AWS_DEFAULT_REGION: ap-northeast-2
       DB_INSTANCE: database-1
       KEEP_SNAPSHOTS: 4   # 최근 4주치만 보존
-
     steps:
+      - name: AWS 자격증명 설정 (OIDC)
+        uses: aws-actions/configure-aws-credentials@v4
+        with:
+          role-to-assume: arn:aws:iam::563332535352:role/GithubActions-VertualOwl-Deploy
+          aws-region: ap-northeast-2
+
       - name: 스냅샷 생성
         id: create
         run: |
