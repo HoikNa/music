@@ -16,7 +16,7 @@ import { toast } from "sonner"
 import { cn } from "@/lib/utils"
 
 const GNB = [
-  { href: "/rankings", label: "멜론차트" },
+  { href: "/rankings", label: "Owl차트" },
   { href: "/explore", label: "최신음악" },
   { href: "/submit", label: "AI심사" },
   { href: "/contest", label: "경연" },
