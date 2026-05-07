@@ -8,6 +8,7 @@ from sqlmodel import Session, select
 
 from app.config import settings
 from app.models.user import User, AuthProvider
+from app.models.refresh_token import RefreshToken
 
 pwd_context = CryptContext(schemes=["bcrypt"], deprecated="auto")
 
@@ -29,13 +30,33 @@ def create_access_token(user_id: uuid.UUID) -> str:
     )
 
 
-def create_refresh_token(user_id: uuid.UUID) -> str:
+def create_refresh_token(user_id: uuid.UUID, db: Session | None = None) -> str:
+    jti = uuid.uuid4().hex
     expire = datetime.utcnow() + timedelta(days=settings.jwt_refresh_expire_days)
-    return jwt.encode(
-        {"sub": str(user_id), "exp": expire, "type": "refresh"},
+    token = jwt.encode(
+        {"sub": str(user_id), "exp": expire, "type": "refresh", "jti": jti},
         settings.jwt_secret,
         algorithm=settings.jwt_algorithm,
     )
+    if db is not None:
+        db.add(RefreshToken(jti=jti, user_id=user_id, expires_at=expire))
+        db.commit()
+    return token
+
+
+def revoke_refresh_token(db: Session, jti: str) -> None:
+    record = db.exec(select(RefreshToken).where(RefreshToken.jti == jti)).first()
+    if record:
+        record.is_revoked = True
+        db.add(record)
+        db.commit()
+
+
+def is_refresh_token_revoked(db: Session, jti: str) -> bool:
+    record = db.exec(select(RefreshToken).where(RefreshToken.jti == jti)).first()
+    if not record:
+        return True  # DB에 없으면 미등록 토큰 → 거부
+    return record.is_revoked
 
 
 def register_user(db: Session, email: str, password: str, nickname: str) -> User:

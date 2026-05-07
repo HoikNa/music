@@ -5,6 +5,7 @@ from app.models.score import BaseScore, PersonaScore, Feedback
 from app.models.ranking import RankingPeriod, RankingEntry, PeriodType, PeriodStatus
 from app.models.tournament import TournamentTicket
 from app.models.credit import Credit, CreditTransaction, CreditReason
+from app.models.refresh_token import RefreshToken
 
 __all__ = [
     "User", "UserRole", "AuthProvider",
@@ -14,4 +15,5 @@ __all__ = [
     "RankingPeriod", "RankingEntry", "PeriodType", "PeriodStatus",
     "TournamentTicket",
     "Credit", "CreditTransaction", "CreditReason",
+    "RefreshToken",
 ]

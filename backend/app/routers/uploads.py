@@ -61,3 +61,38 @@ def get_presigned_url(
 
     audio_url = f"https://{settings.s3_bucket}.s3.{settings.aws_region}.amazonaws.com/{key}"
     return PresignedUrlResponse(upload_url=upload_url, audio_url=audio_url, key=key)
+
+
+class VerifyUploadRequest(BaseModel):
+    key: str
+
+
+@router.post("/verify")
+def verify_upload(
+    body: VerifyUploadRequest,
+    current_user: User = Depends(get_current_user),
+):
+    """클라이언트 업로드 완료 후 S3 HEAD로 실제 파일 존재·크기·타입 검증."""
+    # key는 반드시 해당 사용자 소유여야 함
+    if not body.key.startswith(f"audio/{current_user.id}/"):
+        raise HTTPException(status_code=403, detail="Forbidden")
+
+    s3 = boto3.client("s3", region_name=settings.aws_region)
+    try:
+        head = s3.head_object(Bucket=settings.s3_bucket, Key=body.key)
+    except s3.exceptions.ClientError:
+        raise HTTPException(status_code=404, detail="File not found in storage")
+    except Exception:
+        raise HTTPException(status_code=404, detail="File not found in storage")
+
+    actual_size = head.get("ContentLength", 0)
+    actual_type = head.get("ContentType", "")
+
+    if actual_size <= 0:
+        raise HTTPException(status_code=400, detail="Uploaded file is empty")
+    if actual_size > MAX_SIZE_BYTES:
+        raise HTTPException(status_code=400, detail="File too large (max 50MB)")
+    if actual_type not in ALLOWED_CONTENT_TYPES and not actual_type.startswith("audio/"):
+        raise HTTPException(status_code=400, detail="Invalid audio content type")
+
+    return {"verified": True, "size_bytes": actual_size, "content_type": actual_type}

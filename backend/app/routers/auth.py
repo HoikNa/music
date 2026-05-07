@@ -51,7 +51,7 @@ def register(body: RegisterRequest, response: Response, request: Request, db: Se
     _check_rate_limit(request, settings.rate_limit_register_per_minute)
     user = auth_service.register_user(db, body.email, body.password, body.nickname)
     access_token = auth_service.create_access_token(user.id)
-    refresh_token = auth_service.create_refresh_token(user.id)
+    refresh_token = auth_service.create_refresh_token(user.id, db)
     _set_refresh_cookie(response, refresh_token)
     return TokenResponse(access_token=access_token)
 
@@ -61,7 +61,7 @@ def login(body: LoginRequest, response: Response, request: Request, db: Session 
     _check_rate_limit(request, settings.rate_limit_login_per_minute)
     user = auth_service.authenticate_user(db, body.email, body.password)
     access_token = auth_service.create_access_token(user.id)
-    refresh_token = auth_service.create_refresh_token(user.id)
+    refresh_token = auth_service.create_refresh_token(user.id, db)
     _set_refresh_cookie(response, refresh_token)
     return TokenResponse(access_token=access_token)
 
@@ -76,20 +76,34 @@ def refresh_token(request: Request, response: Response, db: Session = Depends(ge
         if payload.get("type") != "refresh":
             raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="Invalid token type")
         import uuid
+        jti = payload.get("jti", "")
+        if auth_service.is_refresh_token_revoked(db, jti):
+            raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="Token has been revoked")
         user = db.get(User, uuid.UUID(payload["sub"]))
         if not user or user.is_deleted:
             raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="User not found")
     except JWTError:
         raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="Invalid refresh token")
 
+    # 이전 토큰 revoke 후 새 토큰 발급 (rotation)
+    auth_service.revoke_refresh_token(db, jti)
     new_access = auth_service.create_access_token(user.id)
-    new_refresh = auth_service.create_refresh_token(user.id)
+    new_refresh = auth_service.create_refresh_token(user.id, db)
     _set_refresh_cookie(response, new_refresh)
     return TokenResponse(access_token=new_access)
 
 
 @router.post("/logout")
-def logout(response: Response):
+def logout(request: Request, response: Response, db: Session = Depends(get_db)):
+    token = request.cookies.get("refresh_token")
+    if token:
+        try:
+            payload = jwt.decode(token, settings.jwt_secret, algorithms=[settings.jwt_algorithm])
+            jti = payload.get("jti", "")
+            if jti:
+                auth_service.revoke_refresh_token(db, jti)
+        except JWTError:
+            pass
     response.delete_cookie("refresh_token", path="/")
     return {"message": "Logged out"}
 
