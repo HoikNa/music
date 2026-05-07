@@ -18,6 +18,8 @@ _rate_store: dict[str, list[float]] = defaultdict(list)
 
 
 def _check_rate_limit(request: Request, limit: int) -> None:
+    if settings.environment in ("development", "test"):
+        return
     ip = request.client.host if request.client else "unknown"
     now = time.time()
     window = 60.0
