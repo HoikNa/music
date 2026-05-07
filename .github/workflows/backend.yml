@@ -40,36 +40,39 @@ jobs:
     steps:
       - uses: actions/checkout@v4
 
-      - uses: actions/setup-python@v5
+      - name: AWS 자격증명 설정
+        uses: aws-actions/configure-aws-credentials@v4
         with:
-          python-version: "3.12"
+          aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
+          aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+          aws-region: ap-northeast-2
 
-      - name: Lambda 패키징
+      - name: ECR 로그인
+        id: ecr-login
+        uses: aws-actions/amazon-ecr-login@v2
+
+      - name: 이미지 빌드 & ECR 푸시
+        working-directory: backend
+        env:
+          ECR_REGISTRY: ${{ steps.ecr-login.outputs.registry }}
+          ECR_REPO: ${{ secrets.ECR_REPO_NAME }}
+          IMAGE_TAG: ${{ github.sha }}
         run: |
-          mkdir -p dist/package
-          pip install -r requirements.txt \
-            --platform manylinux2014_x86_64 \
-            --implementation cp \
-            --python-version 3.12 \
-            --only-binary=:all: \
-            --upgrade \
-            -t dist/package \
-            --quiet
-          cp -r app dist/package/
-          cp handler.py dist/package/
-          cd dist/package
-          zip -r ../deployment.zip . \
-            -x "*.pyc" -x "*/__pycache__/*" > /dev/null
+          docker build -t $ECR_REGISTRY/$ECR_REPO:$IMAGE_TAG .
+          docker push $ECR_REGISTRY/$ECR_REPO:$IMAGE_TAG
+          docker tag $ECR_REGISTRY/$ECR_REPO:$IMAGE_TAG $ECR_REGISTRY/$ECR_REPO:latest
+          docker push $ECR_REGISTRY/$ECR_REPO:latest
 
-      - name: Lambda 배포
+      - name: Lambda 컨테이너 이미지 업데이트
+        env:
+          ECR_REGISTRY: ${{ steps.ecr-login.outputs.registry }}
+          ECR_REPO: ${{ secrets.ECR_REPO_NAME }}
+          IMAGE_TAG: ${{ github.sha }}
         run: |
           aws lambda update-function-code \
             --function-name ${{ secrets.LAMBDA_FUNCTION_NAME }} \
-            --zip-file fileb://dist/deployment.zip \
+            --image-uri $ECR_REGISTRY/$ECR_REPO:$IMAGE_TAG \
             --region ap-northeast-2
           aws lambda wait function-updated \
             --function-name ${{ secrets.LAMBDA_FUNCTION_NAME }} \
             --region ap-northeast-2
-        env:
-          AWS_ACCESS_KEY_ID: ${{ secrets.AWS_ACCESS_KEY_ID }}
-          AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_ACCESS_KEY }}

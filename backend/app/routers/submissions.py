@@ -11,7 +11,7 @@ from app.models.score import BaseScore, PersonaScore, Feedback
 from app.models.persona import Persona
 from app.models.user import User
 from app.services import credit_service
-from app.services.scoring_service import run_mock_scoring
+from app.services.scoring_service import run_scoring
 from app.models.credit import CreditReason
 
 router = APIRouter(prefix="/submissions", tags=["submissions"])
@@ -115,7 +115,7 @@ def create_submission(
 
     db.commit()
     db.refresh(submission)
-    background_tasks.add_task(run_mock_scoring, submission.id)
+    background_tasks.add_task(run_scoring, submission.id)
     return _serialize_submission(submission, db)
 
 

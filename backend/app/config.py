@@ -15,6 +15,7 @@ class Settings(BaseSettings):
     aws_secret_access_key: str | None = None
     s3_bucket_name: str = "vertualowl-audio"
     redis_url: str = "redis://localhost:6379/0"
+    anthropic_api_key: str | None = None
 
     class Config:
         env_file = ".env"
