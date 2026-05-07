@@ -76,6 +76,10 @@ export interface RankingEntry {
   title: string
   score: number
   rank_change: number
+  // chart display extensions
+  cover_image_url?: string | null
+  genre?: string
+  like_count?: number
 }
 
 export interface RankingPeriod {

@@ -1,74 +1,137 @@
-import { ArrowRight, Compass, Headphones, Heart, MessageSquare, Search, Users } from "lucide-react"
+import Image from "next/image"
+import { Play, Heart, Search } from "lucide-react"
+import { mockWeeklyRanking } from "@/lib/mocks/data"
 
-const cards = [
-  { title: "Night Walk Seoul", by: "Mira", stat: "42K" },
-  { title: "River Room", by: "Han", stat: "31K" },
-  { title: "Tape Ending", by: "Jin", stat: "27K" },
-]
+const GENRES = ["전체", "발라드", "팝", "R&B", "힙합", "록", "인디", "트로트", "재즈"]
 
-export default function ExplorePage() {
-  return (
-    <div className="mx-auto max-w-[1180px] space-y-8">
-      <section className="app-card-lift p-7 md:p-8">
-        <span className="vo-tag vo-tag-amber">Explore</span>
-        <div className="mt-6 grid gap-8 lg:grid-cols-[1fr_340px]">
-          <div>
-            <h1 className="h-display">
-              오늘의 씬에서 <em>새로운 협업</em>을 찾으세요
-            </h1>
-            <p className="mt-4 max-w-[620px] text-sm leading-6 text-[var(--ink-2)]">
-              비슷한 무드의 창작자, 열려 있는 콘테스트, 큐레이터 플레이리스트를 탐색합니다.
-            </p>
-          </div>
-          <div className="flex h-12 items-center gap-3 rounded-full border border-[var(--line)] bg-[var(--tint)] px-4">
-            <Search className="size-4 text-[var(--ink-3)]" />
-            <span className="text-sm text-[var(--ink-3)]">Search by mood, genre, creator</span>
+function CoverCard({ url, title, artist, genre, score }: {
+  url?: string | null; title: string; artist: string; genre?: string; score: number
+}) {
+  if (url) {
+    return (
+      <div className="group relative">
+        <div className="relative mb-2 aspect-square overflow-hidden rounded">
+          <Image src={url} alt={title} fill className="object-cover" unoptimized />
+          <div className="absolute inset-0 hidden group-hover:flex items-center justify-center bg-black/40 transition-all">
+            <button className="size-10 rounded-full bg-white flex items-center justify-center shadow-md">
+              <Play className="size-5 fill-current text-[var(--green-d)] ml-0.5" />
+            </button>
           </div>
         </div>
-      </section>
+        <p className="text-[13px] font-medium truncate">{title}</p>
+        <p className="text-[12px] text-[var(--ink-3)] truncate">{artist}</p>
+        <div className="flex items-center justify-between mt-1">
+          <span className="text-[11px] text-[var(--ink-4)]">{genre}</span>
+          <span className="text-[11px] font-bold text-[var(--green-d)]">{score.toFixed(1)}</span>
+        </div>
+      </div>
+    )
+  }
+  const colors = ["#6366f1,#8b5cf6","#06b6d4,#0284c7","#10b981,#059669","#f59e0b,#d97706","#00c73c,#006620","#ef4444,#dc2626"]
+  const idx = title.charCodeAt(0) % colors.length
+  const [from, to] = colors[idx].split(",")
+  return (
+    <div className="group">
+      <div className="relative mb-2 aspect-square overflow-hidden rounded" style={{ background: `linear-gradient(135deg, ${from}, ${to})` }}>
+        <div className="absolute inset-0 flex items-center justify-center text-white text-[18px] font-black">
+          {title.slice(0, 2)}
+        </div>
+        <div className="absolute inset-0 hidden group-hover:flex items-center justify-center bg-black/30">
+          <button className="size-10 rounded-full bg-white flex items-center justify-center shadow-md">
+            <Play className="size-5 fill-current text-[var(--green-d)] ml-0.5" />
+          </button>
+        </div>
+      </div>
+      <p className="text-[13px] font-medium truncate">{title}</p>
+      <p className="text-[12px] text-[var(--ink-3)] truncate">{artist}</p>
+      <div className="flex items-center justify-between mt-1">
+        <span className="text-[11px] text-[var(--ink-4)]">{genre}</span>
+        <span className="text-[11px] font-bold text-[var(--green-d)]">{score.toFixed(1)}</span>
+      </div>
+    </div>
+  )
+}
 
-      <section className="grid gap-6 lg:grid-cols-[1.15fr_0.85fr]">
-        <div className="grid gap-4 md:grid-cols-3">
-          {cards.map((card, index) => (
-            <div key={card.title} className="app-card overflow-hidden">
-              <div className={`ph h-44 ${index === 0 ? "ph-k1" : index === 1 ? "ph-k2" : "ph-k3"} ${index < 2 ? "text-[var(--paper)]" : ""}`}>
-                Cover
+export default function ExplorePage() {
+  const songs = mockWeeklyRanking.entries
+
+  return (
+    <div className="space-y-5">
+      {/* Header */}
+      <div className="flex flex-wrap items-center justify-between gap-3">
+        <h1 className="text-[20px] font-black">최신음악</h1>
+        <div className="flex items-center gap-2 rounded border border-[var(--line)] bg-[var(--tint)] px-3 h-9 focus-within:border-[var(--green)] focus-within:bg-white w-64 transition-colors">
+          <Search className="size-4 text-[var(--ink-3)] shrink-0" />
+          <input className="w-full bg-transparent text-[13px] outline-none placeholder:text-[var(--ink-3)]"
+            placeholder="곡명, 아티스트 검색" />
+        </div>
+      </div>
+
+      {/* Genre filter */}
+      <div className="flex gap-1.5 flex-wrap">
+        {GENRES.map((g) => (
+          <button key={g}
+            className="rounded-full border border-[var(--line)] px-3 py-1 text-[12px] font-medium text-[var(--ink-2)] hover:border-[var(--green)] hover:text-[var(--green-d)] transition-colors first:border-[var(--green)] first:text-[var(--green-d)] first:bg-[var(--green-bg)]">
+            {g}
+          </button>
+        ))}
+      </div>
+
+      {/* Songs grid */}
+      <div>
+        <div className="flex items-center justify-between mb-3">
+          <h2 className="text-[14px] font-bold text-[var(--ink-1)]">이번 주 인기곡</h2>
+          <div className="flex items-center gap-2 text-[12px] text-[var(--ink-3)]">
+            <Heart className="size-3.5" />
+            <span>{songs.reduce((a, e) => a + (e.like_count ?? 0), 0).toLocaleString()} 총 좋아요</span>
+          </div>
+        </div>
+        <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-4">
+          {songs.map((e) => (
+            <CoverCard
+              key={e.submission_id}
+              url={e.cover_image_url}
+              title={e.title}
+              artist={e.nickname}
+              genre={e.genre}
+              score={e.score}
+            />
+          ))}
+        </div>
+      </div>
+
+      {/* New arrivals list */}
+      <div>
+        <h2 className="text-[14px] font-bold text-[var(--ink-1)] mb-3">신규 제출곡</h2>
+        <div className="border border-[var(--line)] rounded overflow-hidden">
+          {songs.slice(0, 10).map((e, i) => (
+            <div key={e.submission_id}
+              className="flex items-center gap-3 px-4 py-3 border-b border-[var(--line-soft)] hover:bg-[var(--tint)] transition-colors last:border-0">
+              <span className="w-5 text-[13px] text-[var(--ink-4)] tabular-nums text-center">{i + 1}</span>
+              <div className="relative size-10 shrink-0">
+                {e.cover_image_url ? (
+                  <Image src={e.cover_image_url} alt={e.title} fill className="rounded object-cover" unoptimized />
+                ) : (
+                  <div className="size-10 rounded bg-[var(--tint)] flex items-center justify-center text-[11px] font-bold text-[var(--ink-3)]">
+                    {e.title.slice(0, 2)}
+                  </div>
+                )}
               </div>
-              <div className="p-4">
-                <h2 className="text-sm font-medium text-[var(--ink-0)]">{card.title}</h2>
-                <p className="mt-1 text-xs text-[var(--ink-3)]">by {card.by}</p>
-                <div className="mt-4 flex items-center justify-between text-xs text-[var(--ink-2)]">
-                  <span className="inline-flex items-center gap-1">
-                    <Headphones className="size-3.5" />
-                    {card.stat}
-                  </span>
-                  <ArrowRight className="size-4" />
-                </div>
+              <div className="flex-1 min-w-0">
+                <p className="text-[13px] font-medium truncate">{e.title}</p>
+                <p className="text-[12px] text-[var(--ink-3)] truncate">{e.nickname} · {e.genre}</p>
+              </div>
+              <div className="flex items-center gap-3 text-[12px] text-[var(--ink-3)] shrink-0">
+                <span className="flex items-center gap-1"><Heart className="size-3" />{(e.like_count ?? 0).toLocaleString()}</span>
+                <span className="font-bold text-[var(--green-d)]">{e.score.toFixed(1)}</span>
+                <button className="flex size-7 items-center justify-center rounded-full hover:bg-[var(--tint)] transition-colors">
+                  <Play className="size-3.5 fill-current" />
+                </button>
               </div>
             </div>
           ))}
         </div>
-
-        <aside className="app-card p-6">
-          <div className="label-mono">Community Pulse</div>
-          <div className="mt-5 space-y-4">
-            {[
-              { label: "Open collabs", value: "184", icon: Users },
-              { label: "Curator likes", value: "2.8K", icon: Heart },
-              { label: "New notes", value: "73", icon: MessageSquare },
-              { label: "Mood clusters", value: "12", icon: Compass },
-            ].map(({ label, value, icon: Icon }) => (
-              <div key={label} className="flex items-center justify-between rounded-[12px] border border-[var(--line)] p-4">
-                <span className="inline-flex items-center gap-3 text-sm text-[var(--ink-1)]">
-                  <Icon className="size-4 text-[var(--amber)]" />
-                  {label}
-                </span>
-                <span className="font-mono text-sm text-[var(--ink-0)]">{value}</span>
-              </div>
-            ))}
-          </div>
-        </aside>
-      </section>
+      </div>
     </div>
   )
 }

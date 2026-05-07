@@ -1,72 +1,105 @@
-import { ArrowRight, CheckCircle2, Clock3, Trophy, Upload, Users } from "lucide-react"
+import { ChevronRight, Clock3, Trophy, Upload, Users } from "lucide-react"
+import { mockWeeklyRanking } from "@/lib/mocks/data"
 
-const entries = [
-  ["한강 블루스", "Ready", "91.2"],
-  ["서울의 밤", "Mix review", "88.4"],
-  ["Blue Hour", "Submitted", "86.9"],
+const CONTESTS = [
+  { id: 1, title: "Spring 2026 보컬 챔피언십", genre: "전체", deadline: "D-7", prize: "12,000,000", participants: 1284, status: "진행중" },
+  { id: 2, title: "발라드 클래식 경연", genre: "발라드", deadline: "D-14", prize: "5,000,000", participants: 831, status: "진행중" },
+  { id: 3, title: "R&B 소울 페스티벌", genre: "R&B", deadline: "D-21", prize: "3,000,000", participants: 447, status: "모집중" },
+  { id: 4, title: "인디 뮤직 위크", genre: "인디", deadline: "D-28", prize: "2,000,000", participants: 203, status: "모집중" },
 ]
 
 export default function ContestPage() {
+  const entries = mockWeeklyRanking.entries.slice(0, 8)
+
   return (
-    <div className="mx-auto max-w-[1180px] space-y-8">
-      <section className="app-card-lift grid overflow-hidden lg:grid-cols-[1fr_340px]">
-        <div className="p-7 md:p-8">
-          <span className="vo-tag vo-tag-amber">Spring 2026 Contest · D-7</span>
-          <h1 className="h-display mt-6">
-            한강의 밤을 들려줄 <em>다음 곡</em>을 고르세요
-          </h1>
-          <p className="mt-4 max-w-[620px] text-sm leading-6 text-[var(--ink-2)]">
-            제출 전 자동 심사, 권리 메타데이터, 커버 이미지 상태를 한 번에 점검합니다.
-          </p>
-          <button className="vo-btn vo-btn-primary mt-7">
-            <Upload className="size-4" />
-            출품 패키지 만들기
+    <div className="space-y-6">
+      {/* Header */}
+      <div className="flex items-center justify-between">
+        <h1 className="text-[20px] font-black">경연</h1>
+        <button className="flex items-center gap-2 rounded bg-[var(--green)] text-white text-[13px] font-semibold px-4 py-2 hover:bg-[var(--green-d)] transition-colors">
+          <Upload className="size-4" />출품 신청
+        </button>
+      </div>
+
+      {/* Contest banner grid */}
+      <div className="grid md:grid-cols-2 gap-3">
+        {CONTESTS.map((c) => (
+          <div key={c.id} className="border border-[var(--line)] rounded overflow-hidden hover:border-[var(--green)] transition-colors cursor-pointer">
+            {/* Banner top */}
+            <div className="h-28 bg-gradient-to-r from-[#001a0d] to-[#003319] flex items-center px-5 gap-4">
+              <div className="size-10 rounded-full bg-[var(--green)] flex items-center justify-center shrink-0">
+                <Trophy className="size-5 text-white" />
+              </div>
+              <div>
+                <div className="flex items-center gap-2 mb-1">
+                  <span className={`text-[10px] font-bold px-2 py-0.5 rounded ${c.status === "진행중" ? "bg-[var(--green)] text-white" : "bg-white/20 text-white"}`}>
+                    {c.status}
+                  </span>
+                  <span className="text-[11px] text-white/60">{c.deadline}</span>
+                </div>
+                <p className="text-[15px] font-bold text-white leading-snug">{c.title}</p>
+              </div>
+            </div>
+            {/* Info row */}
+            <div className="flex items-center justify-between px-5 py-3 bg-[var(--tint)]">
+              <div className="flex items-center gap-4 text-[12px] text-[var(--ink-2)]">
+                <span className="flex items-center gap-1.5"><Users className="size-3.5" />{c.participants.toLocaleString()}명 참가</span>
+                <span className="flex items-center gap-1.5"><Clock3 className="size-3.5" />마감 {c.deadline}</span>
+              </div>
+              <div className="text-right">
+                <p className="text-[10px] text-[var(--ink-3)]">상금</p>
+                <p className="text-[14px] font-black text-[var(--green-d)]">₩{parseInt(c.prize).toLocaleString()}</p>
+              </div>
+            </div>
+          </div>
+        ))}
+      </div>
+
+      {/* Featured contest detail */}
+      <div className="border border-[var(--line)] rounded overflow-hidden">
+        <div className="flex items-center justify-between px-5 py-3 border-b border-[var(--line)] bg-[var(--tint)]">
+          <div>
+            <h2 className="text-[14px] font-bold">Spring 2026 보컬 챔피언십</h2>
+            <p className="text-[12px] text-[var(--ink-3)]">현재 참가곡 TOP 8</p>
+          </div>
+          <button className="flex items-center gap-1 text-[12px] text-[var(--green)] font-medium hover:text-[var(--green-d)]">
+            전체 보기 <ChevronRight className="size-3.5" />
           </button>
         </div>
-        <div className="border-t border-[var(--line)] bg-[var(--tint)] p-6 lg:border-l lg:border-t-0">
-          <div className="app-card h-full p-5">
-            <Trophy className="size-7 text-[var(--amber)]" />
-            <div className="metric-label mt-6">Prize Pool</div>
-            <div className="metric-value mt-2 text-5xl">₩12M</div>
-            <p className="mt-4 text-sm leading-6 text-[var(--ink-2)]">상위 12곡은 공식 플레이리스트와 라이브 쇼케이스에 연결됩니다.</p>
-          </div>
-        </div>
-      </section>
 
-      <section className="grid gap-6 lg:grid-cols-[1.15fr_0.85fr]">
-        <div className="app-card p-6">
-          <div className="label-mono">Candidate Tracks</div>
-          <div className="mt-5 space-y-3">
-            {entries.map(([title, status, score]) => (
-              <div key={title} className="grid grid-cols-[1fr_auto_auto] items-center gap-4 rounded-[12px] border border-[var(--line)] p-4">
-                <div>
-                  <div className="text-sm font-medium text-[var(--ink-0)]">{title}</div>
-                  <div className="text-xs text-[var(--ink-3)]">{status}</div>
-                </div>
-                <div className="font-mono text-sm text-[var(--amber-d)]">{score}</div>
-                <ArrowRight className="size-4 text-[var(--ink-3)]" />
-              </div>
-            ))}
-          </div>
+        {/* Column header */}
+        <div className="grid items-center px-5 py-2 gap-3 bg-white border-b border-[var(--line)] text-[11px] font-medium text-[var(--ink-3)] uppercase tracking-wide"
+          style={{ gridTemplateColumns: "32px 1fr 64px 56px 80px" }}>
+          <span className="text-center">순위</span>
+          <span>곡명 / 참가자</span>
+          <span className="hidden sm:block">장르</span>
+          <span className="text-right pr-2">점수</span>
+          <span />
         </div>
 
-        <div className="app-card p-6">
-          <div className="label-mono">Checklist</div>
-          <div className="mt-5 space-y-4">
-            {[
-              { text: "음원 파일 검수 완료", icon: CheckCircle2 },
-              { text: "커버 이미지 3000px 확인", icon: CheckCircle2 },
-              { text: "제출 마감까지 7일", icon: Clock3 },
-              { text: "현재 참가자 1,284명", icon: Users },
-            ].map(({ text, icon: Icon }) => (
-              <div key={text} className="flex items-center gap-3 text-sm text-[var(--ink-1)]">
-                <Icon className="size-4 text-[var(--amber)]" />
-                {text}
-              </div>
-            ))}
+        {entries.map((e) => (
+          <div key={e.submission_id}
+            className="grid items-center px-5 py-3 gap-3 border-b border-[var(--line-soft)] hover:bg-[var(--tint)] transition-colors last:border-0"
+            style={{ gridTemplateColumns: "32px 1fr 64px 56px 80px" }}>
+            <span className={`text-[14px] font-black tabular-nums text-center ${e.rank <= 3 ? "text-[var(--green)]" : "text-[var(--ink-3)]"}`}>
+              {e.rank}
+            </span>
+            <div className="min-w-0">
+              <p className="text-[13px] font-medium truncate">{e.title}</p>
+              <p className="text-[12px] text-[var(--ink-3)] truncate">{e.nickname}</p>
+            </div>
+            <span className="hidden sm:block text-[12px] text-[var(--ink-3)] truncate">{e.genre}</span>
+            <span className="text-[13px] font-bold text-[var(--green-d)] tabular-nums text-right pr-2">
+              {e.score.toFixed(1)}
+            </span>
+            <div className="flex items-center gap-1 justify-end">
+              <button className="flex items-center gap-1 text-[12px] font-medium rounded border border-[var(--line)] px-2.5 h-7 hover:border-[var(--green)] hover:text-[var(--green-d)] transition-colors">
+                상세
+              </button>
+            </div>
           </div>
-        </div>
-      </section>
+        ))}
+      </div>
     </div>
   )
 }

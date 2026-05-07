@@ -18,7 +18,7 @@ export const mockPersonas: Persona[] = [
     display_name: "김범수 (발라드 마스터)",
     genre: "발라드",
     image_url: null,
-    description: "고음의 안정성과 감성적인 표현이 특징인 발라드의 제왕. 파워풀한 고음과 섬세한 감정 표현을 높이 평가합니다.",
+    description: "고음의 안정성과 감성적인 표현이 특징인 발라드의 제왕.",
     weights: [
       { dimension: "pitch", multiplier: 1.5 },
       { dimension: "dynamic", multiplier: 1.2 },
@@ -30,7 +30,7 @@ export const mockPersonas: Persona[] = [
     display_name: "아이유 (국민 아이돌)",
     genre: "팝/발라드",
     image_url: null,
-    description: "깔끔한 발음과 감성적인 표현의 완벽한 조화. 자연스러운 감정 전달과 정확한 발음을 중시합니다.",
+    description: "깔끔한 발음과 감성적인 표현의 완벽한 조화.",
     weights: [
       { dimension: "articulation", multiplier: 1.3 },
       { dimension: "dynamic", multiplier: 1.3 },
@@ -38,26 +38,26 @@ export const mockPersonas: Persona[] = [
   },
   {
     id: "persona-3",
-    name: "박효신",
-    display_name: "박효신 (소울 보이스)",
-    genre: "R&B/발라드",
+    name: "태양",
+    display_name: "태양 (BIGBANG)",
+    genre: "R&B",
     image_url: null,
-    description: "깊은 호흡과 폭넓은 다이내믹 표현의 달인. 감정의 깊이와 호흡의 안정성을 중요하게 생각합니다.",
+    description: "리듬 그루브와 다이내믹한 에너지를 극도로 중시합니다.",
     weights: [
-      { dimension: "dynamic", multiplier: 1.4 },
-      { dimension: "range", multiplier: 1.3 },
+      { dimension: "rhythm", multiplier: 1.4 },
+      { dimension: "dynamic", multiplier: 1.2 },
     ],
   },
   {
     id: "persona-4",
-    name: "화사",
-    display_name: "화사 (파워 보컬)",
-    genre: "R&B/힙합",
+    name: "선미",
+    display_name: "선미 (댄스팝)",
+    genre: "댄스/팝",
     image_url: null,
-    description: "강렬한 톤과 그루브감이 넘치는 무대 장악력. 독특한 음색과 리듬감을 높이 평가합니다.",
+    description: "리듬 정확성과 무대 위 존재감을 최우선시하는 퍼포머.",
     weights: [
       { dimension: "rhythm", multiplier: 1.3 },
-      { dimension: "dynamic", multiplier: 1.2 },
+      { dimension: "articulation", multiplier: 1.2 },
     ],
   },
 ]
@@ -73,12 +73,7 @@ export const mockSubmissions: Submission[] = [
     reject_reason: null,
     ranking_mode: "both",
     base_score: {
-      pitch: 17.2,
-      rhythm: 15.8,
-      range: 14.5,
-      dynamic: 16.0,
-      articulation: 15.5,
-      total: 79.0,
+      pitch: 17.2, rhythm: 15.8, range: 14.5, dynamic: 16.0, articulation: 15.5, total: 79.0,
     },
     persona_scores: [
       {
@@ -86,16 +81,16 @@ export const mockSubmissions: Submission[] = [
         persona_name: "김범수",
         score: 85.2,
         feedback: {
-          summary: "전반적으로 안정적인 보컬 라인을 보여줬습니다. 특히 후렴구에서의 고음 처리가 인상적이었어요. 조금 더 감정을 담아서 부른다면 완성도가 높아질 것 같습니다.",
+          summary: "전반적으로 안정적인 보컬 라인을 보여줬습니다. 특히 후렴구에서의 고음 처리가 인상적이었어요.",
           strengths: [
             { timestamp: "0:32", description: "후렴 진입부의 피치 안정성이 뛰어납니다" },
             { timestamp: "1:15", description: "다이내믹 변화가 자연스럽게 표현됩니다" },
             { timestamp: "2:05", description: "고음 영역에서의 음색 유지가 좋습니다" },
           ],
           improvements: [
-            { timestamp: "0:18", description: "verse 초반 발음이 조금 뭉개집니다. 자음을 더 명확히" },
+            { timestamp: "0:18", description: "verse 초반 발음이 조금 뭉개집니다" },
             { timestamp: "1:45", description: "브릿지 부분에서 호흡이 짧아지고 있어요" },
-            { timestamp: "2:30", description: "마지막 롱톤에서 비브라토를 좀 더 안정적으로" },
+            { timestamp: "2:30", description: "마지막 롱톤에서 비브라토를 더 안정적으로" },
           ],
         },
       },
@@ -117,6 +112,10 @@ export const mockSubmissions: Submission[] = [
   },
 ]
 
+function cover(seed: string) {
+  return `https://picsum.photos/seed/${seed}/80/80`
+}
+
 export const mockWeeklyRanking: WeeklyRanking = {
   period: {
     start_at: "2026-04-28T00:00:00Z",
@@ -124,18 +123,28 @@ export const mockWeeklyRanking: WeeklyRanking = {
     status: "active",
   },
   entries: [
-    { rank: 1, user_id: "u1", nickname: "보컬킹", profile_image_url: null, submission_id: "s1", title: "사랑했잖아", score: 94.3, rank_change: 2 },
-    { rank: 2, user_id: "u2", nickname: "노래천사", profile_image_url: null, submission_id: "s2", title: "그리움", score: 92.1, rank_change: -1 },
-    { rank: 3, user_id: "u3", nickname: "멜로디st", profile_image_url: null, submission_id: "s3", title: "봄비", score: 91.5, rank_change: 0 },
-    { rank: 4, user_id: "u4", nickname: "가을목소리", profile_image_url: null, submission_id: "s4", title: "첫눈", score: 89.7, rank_change: 3 },
-    { rank: 5, user_id: "u5", nickname: "별빛보컬", profile_image_url: null, submission_id: "s5", title: "너를 만난 날", score: 88.2, rank_change: -2 },
-    { rank: 6, user_id: "u6", nickname: "음악사랑", profile_image_url: null, submission_id: "s6", title: "잊을게", score: 87.5, rank_change: 1 },
-    { rank: 7, user_id: "u7", nickname: "고음장인", profile_image_url: null, submission_id: "s7", title: "이별 연습", score: 86.9, rank_change: 0 },
-    { rank: 8, user_id: "user-1", nickname: "음악천재", profile_image_url: null, submission_id: "sub-1", title: "봄날의 그대에게", score: 85.2, rank_change: 4 },
-    { rank: 9, user_id: "u9", nickname: "소울가수", profile_image_url: null, submission_id: "s9", title: "밤편지", score: 84.1, rank_change: -1 },
-    { rank: 10, user_id: "u10", nickname: "달빛목소리", profile_image_url: null, submission_id: "s10", title: "그대라는 시", score: 83.7, rank_change: 2 },
+    { rank: 1, user_id: "u1", nickname: "보컬킹", profile_image_url: null, submission_id: "s1", title: "사랑했잖아", score: 94.3, rank_change: 2, cover_image_url: cover("s1"), genre: "발라드", like_count: 28341 },
+    { rank: 2, user_id: "u2", nickname: "노래천사", profile_image_url: null, submission_id: "s2", title: "그리움", score: 92.1, rank_change: -1, cover_image_url: cover("s2"), genre: "팝", like_count: 21905 },
+    { rank: 3, user_id: "u3", nickname: "멜로디st", profile_image_url: null, submission_id: "s3", title: "봄비", score: 91.5, rank_change: 0, cover_image_url: cover("s3"), genre: "R&B", like_count: 19832 },
+    { rank: 4, user_id: "u4", nickname: "가을목소리", profile_image_url: null, submission_id: "s4", title: "첫눈", score: 89.7, rank_change: 3, cover_image_url: cover("s4"), genre: "발라드", like_count: 15674 },
+    { rank: 5, user_id: "u5", nickname: "별빛보컬", profile_image_url: null, submission_id: "s5", title: "너를 만난 날", score: 88.2, rank_change: -2, cover_image_url: cover("s5"), genre: "팝", like_count: 13421 },
+    { rank: 6, user_id: "u6", nickname: "음악사랑", profile_image_url: null, submission_id: "s6", title: "잊을게", score: 87.5, rank_change: 1, cover_image_url: cover("s6"), genre: "인디", like_count: 11293 },
+    { rank: 7, user_id: "u7", nickname: "고음장인", profile_image_url: null, submission_id: "s7", title: "이별 연습", score: 86.9, rank_change: 0, cover_image_url: cover("s7"), genre: "발라드", like_count: 9847 },
+    { rank: 8, user_id: "user-1", nickname: "음악천재", profile_image_url: null, submission_id: "sub-1", title: "봄날의 그대에게", score: 85.2, rank_change: 4, cover_image_url: cover("sub1"), genre: "발라드", like_count: 8203 },
+    { rank: 9, user_id: "u9", nickname: "소울가수", profile_image_url: null, submission_id: "s9", title: "밤편지", score: 84.1, rank_change: -1, cover_image_url: cover("s9"), genre: "R&B", like_count: 7650 },
+    { rank: 10, user_id: "u10", nickname: "달빛목소리", profile_image_url: null, submission_id: "s10", title: "그대라는 시", score: 83.7, rank_change: 2, cover_image_url: cover("s10"), genre: "팝", like_count: 6934 },
+    { rank: 11, user_id: "u11", nickname: "하늘보컬", profile_image_url: null, submission_id: "s11", title: "오래된 노래", score: 83.1, rank_change: 0, cover_image_url: cover("s11"), genre: "발라드", like_count: 5872 },
+    { rank: 12, user_id: "u12", nickname: "리듬마스터", profile_image_url: null, submission_id: "s12", title: "춤추는 밤", score: 82.4, rank_change: -3, cover_image_url: cover("s12"), genre: "댄스", like_count: 5431 },
+    { rank: 13, user_id: "u13", nickname: "감성뮤직", profile_image_url: null, submission_id: "s13", title: "계절이 지나면", score: 81.8, rank_change: 1, cover_image_url: cover("s13"), genre: "인디", like_count: 4920 },
+    { rank: 14, user_id: "u14", nickname: "빛나는별", profile_image_url: null, submission_id: "s14", title: "새벽 세 시", score: 80.9, rank_change: 5, cover_image_url: cover("s14"), genre: "R&B", like_count: 4312 },
+    { rank: 15, user_id: "u15", nickname: "목소리요정", profile_image_url: null, submission_id: "s15", title: "별이 빛나는 밤", score: 79.7, rank_change: 0, cover_image_url: cover("s15"), genre: "발라드", like_count: 3891 },
+    { rank: 16, user_id: "u16", nickname: "재즈러버", profile_image_url: null, submission_id: "s16", title: "Blue Monday", score: 78.3, rank_change: -2, cover_image_url: cover("s16"), genre: "재즈", like_count: 3201 },
+    { rank: 17, user_id: "u17", nickname: "팝가수", profile_image_url: null, submission_id: "s17", title: "여름밤의 꿈", score: 77.6, rank_change: 0, cover_image_url: cover("s17"), genre: "팝", like_count: 2987 },
+    { rank: 18, user_id: "u18", nickname: "인디뮤직", profile_image_url: null, submission_id: "s18", title: "길을 걷다", score: 76.2, rank_change: 3, cover_image_url: cover("s18"), genre: "인디", like_count: 2543 },
+    { rank: 19, user_id: "u19", nickname: "록스타지망생", profile_image_url: null, submission_id: "s19", title: "폭풍 속에서", score: 75.8, rank_change: -1, cover_image_url: cover("s19"), genre: "록", like_count: 2108 },
+    { rank: 20, user_id: "u20", nickname: "신인가수", profile_image_url: null, submission_id: "s20", title: "첫 번째 노래", score: 74.1, rank_change: 0, cover_image_url: cover("s20"), genre: "팝", like_count: 1834 },
   ],
-  my_entry: { rank: 8, user_id: "user-1", nickname: "음악천재", profile_image_url: null, submission_id: "sub-1", title: "봄날의 그대에게", score: 85.2, rank_change: 4 },
+  my_entry: { rank: 8, user_id: "user-1", nickname: "음악천재", profile_image_url: null, submission_id: "sub-1", title: "봄날의 그대에게", score: 85.2, rank_change: 4, cover_image_url: cover("sub1"), genre: "발라드", like_count: 8203 },
 }
 
 export const mockCreditTransactions: CreditTransaction[] = [
