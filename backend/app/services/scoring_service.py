@@ -45,6 +45,14 @@ def _compute_persona_score(
         select(PersonaWeight).where(PersonaWeight.persona_id == persona_id)
     ).all()
 
+    configured_dims = {w.dimension for w in weights}
+    missing = set(DIMENSION_FIELD_MAP) - {d.value for d in configured_dims}
+    if missing:
+        import logging
+        logging.getLogger(__name__).warning(
+            "Persona %s missing weights for dimensions: %s", persona_id, missing
+        )
+
     breakdown: dict = {}
     total = 0.0
     for w in weights:

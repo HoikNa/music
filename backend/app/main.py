@@ -1,3 +1,4 @@
+import logging
 import sentry_sdk
 import uuid
 from contextlib import asynccontextmanager
@@ -12,6 +13,9 @@ if settings.sentry_dsn:
     sentry_sdk.init(dsn=settings.sentry_dsn, environment=settings.environment)
 
 
+logger = logging.getLogger(__name__)
+
+
 @asynccontextmanager
 async def lifespan(app: FastAPI):
     # cold start 시 stale submission 복구
@@ -19,7 +23,7 @@ async def lifespan(app: FastAPI):
         from app.services.scoring_service import recover_stale_submissions
         recover_stale_submissions()
     except Exception:
-        pass
+        logger.exception("stale submission 복구 실패")
     yield
 
 
