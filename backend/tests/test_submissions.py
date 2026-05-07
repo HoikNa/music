@@ -45,7 +45,7 @@ def test_list_submissions_unauthenticated(client):
     assert res.status_code == 401
 
 
-@patch("app.routers.submissions.run_mock_scoring")
+@patch("app.routers.submissions.run_scoring")
 def test_create_submission(mock_scoring, client, auth_headers):
     persona_id = _create_persona(client, auth_headers)
     payload = {**SUBMISSION_PAYLOAD, "persona_ids": [persona_id]}
@@ -60,7 +60,7 @@ def test_create_submission(mock_scoring, client, auth_headers):
     mock_scoring.assert_called_once()
 
 
-@patch("app.routers.submissions.run_mock_scoring")
+@patch("app.routers.submissions.run_scoring")
 def test_get_submission(mock_scoring, client, auth_headers):
     persona_id = _create_persona(client, auth_headers)
     create_res = client.post(
@@ -75,14 +75,14 @@ def test_get_submission(mock_scoring, client, auth_headers):
     assert res.json()["id"] == submission_id
 
 
-@patch("app.routers.submissions.run_mock_scoring")
+@patch("app.routers.submissions.run_scoring")
 def test_create_submission_invalid_persona(mock_scoring, client, auth_headers):
     payload = {**SUBMISSION_PAYLOAD, "persona_ids": [str(uuid.uuid4())]}
     res = client.post("/api/v1/submissions", json=payload, headers=auth_headers)
     assert res.status_code == 400
 
 
-@patch("app.routers.submissions.run_mock_scoring")
+@patch("app.routers.submissions.run_scoring")
 def test_get_submission_other_user_forbidden(mock_scoring, client, auth_headers):
     persona_id = _create_persona(client, auth_headers)
     create_res = client.post(
