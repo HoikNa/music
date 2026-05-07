@@ -1,6 +1,7 @@
 """채점 파이프라인 — librosa 오디오 분석 + Claude API 피드백."""
+import logging
 import uuid
-from datetime import datetime
+from datetime import datetime, timedelta
 
 from sqlalchemy import update as sa_update
 from sqlmodel import Session, select, create_engine
@@ -10,8 +11,12 @@ from app.models.score import BaseScore, PersonaScore, Feedback
 from app.models.persona import Persona, PersonaWeight, PersonaDimension
 from app.models.submission import Submission, SubmissionPersona, SubmissionStatus
 from app.models.ranking import RankingEntry, RankingPeriod, PeriodStatus
-from app.services import audio_analyzer, feedback_generator, credit_service
+from app.models.master_score import MasterScore
+from app.models.tournament import TournamentTicket
+from app.services import audio_analyzer, feedback_generator, credit_service, validation_service
 from app.models.credit import CreditReason
+
+logger = logging.getLogger(__name__)
 
 DIMENSION_FIELD_MAP: dict[PersonaDimension, str] = {
     PersonaDimension.pitch: "pitch_score",
@@ -60,21 +65,24 @@ def _compute_persona_score(
     for w in weights:
         field = DIMENSION_FIELD_MAP[w.dimension]
         raw = getattr(base_score, field, 0.0)
+        raw_100 = raw * 5
         weighted = raw * w.multiplier
-        if w.bonus_threshold and raw >= w.bonus_threshold:
+        if w.bonus_threshold and raw_100 >= w.bonus_threshold:
             weighted *= 1.1
         breakdown[w.dimension.value] = {
             "raw": raw,
+            "raw_100": round(raw_100, 2),
             "multiplier": w.multiplier,
             "weighted": round(weighted, 2),
         }
         total += weighted
+    multiplier_sum = sum(w.multiplier for w in weights) or 1.0
 
     ps = PersonaScore(
         submission_id=base_score.submission_id,
         persona_id=persona_id,
         base_score_id=base_score.id,
-        persona_score=round(total, 2),
+        persona_score=round((total / multiplier_sum) * 5, 2),
         weighted_breakdown=breakdown,
     )
     db.add(ps)
@@ -145,6 +153,8 @@ def run_scoring(submission_id: uuid.UUID) -> None:
                 return
 
             submission = db.get(Submission, submission_id)
+            validation_service.run_submission_validation(db, submission)
+
             submission.status = SubmissionStatus.scoring
             submission.updated_at = datetime.utcnow()
             db.add(submission)
@@ -200,13 +210,14 @@ def run_scoring(submission_id: uuid.UUID) -> None:
                     summary=feedback_data["summary"],
                     strengths=feedback_data["strengths"],
                     improvements=feedback_data["improvements"],
-                    model_version="fallback-rule-v1" if used_fallback else "claude-opus-4-7",
+                    model_version="fallback-rule-v1" if used_fallback else settings.feedback_model,
                 )
                 db.add(feedback)
                 db.flush()
 
             # ── RankingEntry upsert ───────────────────────────────────────
             _upsert_ranking_entries(db, submission_id)
+            _issue_tournament_tickets(db, submission_id)
 
             submission = db.get(Submission, submission_id)
             submission.status = SubmissionStatus.scored
@@ -214,9 +225,12 @@ def run_scoring(submission_id: uuid.UUID) -> None:
             db.add(submission)
             db.commit()
 
-        except Exception:
+        except Exception as exc:
             db.rollback()
-            _mark_rejected(db, submission_id, "채점 중 오류가 발생했습니다. 크레딧이 환불됩니다.")
+            reason = "채점 중 오류가 발생했습니다. 크레딧이 환불됩니다."
+            if isinstance(exc, validation_service.ValidationFailed):
+                reason = str(exc)
+            _mark_rejected(db, submission_id, reason)
 
 
 def _upsert_ranking_entries(db: Session, submission_id: uuid.UUID) -> None:
@@ -276,6 +290,57 @@ def _upsert_ranking_entries(db: Session, submission_id: uuid.UUID) -> None:
                 db.add(entry)
 
     db.flush()
+
+
+def _issue_tournament_tickets(db: Session, submission_id: uuid.UUID) -> None:
+    """PersonaScore가 MasterScore를 초과하면 TournamentTicket 발급."""
+    try:
+        with db.begin_nested():
+            submission = db.get(Submission, submission_id)
+            if not submission:
+                return
+
+            now = datetime.utcnow()
+            persona_scores = db.exec(
+                select(PersonaScore).where(PersonaScore.submission_id == submission_id)
+            ).all()
+
+            for persona_score in persona_scores:
+                master_score = db.exec(
+                    select(MasterScore)
+                    .where(
+                        MasterScore.persona_id == persona_score.persona_id,
+                        MasterScore.is_active,
+                        MasterScore.valid_from <= now,
+                        (MasterScore.valid_until == None) | (MasterScore.valid_until >= now),  # noqa: E711
+                    )
+                    .order_by(MasterScore.valid_from.desc())
+                ).first()
+                if not master_score or persona_score.persona_score <= master_score.target_score:
+                    continue
+
+                existing = db.exec(
+                    select(TournamentTicket).where(
+                        TournamentTicket.user_id == submission.user_id,
+                        TournamentTicket.persona_id == persona_score.persona_id,
+                        TournamentTicket.master_score_id == master_score.id,
+                    )
+                ).first()
+                if existing:
+                    continue
+
+                db.add(
+                    TournamentTicket(
+                        user_id=submission.user_id,
+                        persona_id=persona_score.persona_id,
+                        submission_id=submission_id,
+                        master_score_id=master_score.id,
+                        expires_at=now + timedelta(days=30),
+                    )
+                )
+                db.flush()
+    except Exception:
+        logger.exception("Failed to issue tournament tickets for submission %s", submission_id)
 
 
 def recover_stale_submissions() -> None:

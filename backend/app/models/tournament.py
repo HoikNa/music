@@ -17,6 +17,11 @@ class TournamentTicket(SQLModel, table=True):
     user_id: uuid.UUID = Field(foreign_key="users.id", index=True)
     persona_id: uuid.UUID = Field(foreign_key="personas.id", index=True)
     submission_id: uuid.UUID = Field(foreign_key="submissions.id", index=True)
+    master_score_id: uuid.UUID | None = Field(
+        default=None,
+        foreign_key="master_scores.id",
+        index=True,
+    )
     status: TicketStatus = Field(default=TicketStatus.unused, index=True)
     expires_at: datetime
     used_at: datetime | None = Field(default=None)

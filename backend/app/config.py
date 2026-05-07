@@ -16,9 +16,23 @@ class Settings(BaseSettings):
     s3_bucket_name: str = "vertualowl-audio"
     redis_url: str = "redis://localhost:6379/0"
     anthropic_api_key: str | None = None
+    openai_api_key: str | None = None
+    feedback_provider: str = "openai"
+    feedback_model: str = "gpt-4.1-mini"
+    lyrics_model: str = "gpt-4.1-mini"
+    moderation_model: str = "omni-moderation-latest"
+    music_generation_provider: str = "mock"
+    mubert_api_key: str | None = None
+    mastering_target_lufs: float = -14.0
+    validation_strict_mode: bool = False
+    acrcloud_host: str | None = None
+    acrcloud_access_key: str | None = None
+    acrcloud_access_secret: str | None = None
+    ai_music_probability_threshold: float = 0.8
     stale_submission_timeout_minutes: int = 10
     rate_limit_login_per_minute: int = 10
     rate_limit_register_per_minute: int = 5
+    max_submissions_per_day: int = 10
 
     class Config:
         env_file = ".env"

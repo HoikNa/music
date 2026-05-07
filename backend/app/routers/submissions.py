@@ -2,9 +2,11 @@ import json
 import logging
 import os
 import uuid
+from datetime import datetime
 from urllib.parse import urlparse
 from fastapi import APIRouter, BackgroundTasks, Depends, HTTPException, status
 from pydantic import BaseModel, field_validator
+from sqlalchemy import func
 from sqlmodel import Session, select
 
 from app.dependencies.auth import get_current_user
@@ -159,6 +161,33 @@ def create_submission(
             )
         except Exception:
             raise HTTPException(status_code=400, detail="Audio file not found in storage")
+
+    today_start = datetime.utcnow().replace(hour=0, minute=0, second=0, microsecond=0)
+    daily_count = db.exec(
+        select(func.count(Submission.id)).where(
+            Submission.user_id == current_user.id,
+            Submission.created_at >= today_start,
+            ~Submission.is_deleted,
+        )
+    ).one()
+    if daily_count >= _settings.max_submissions_per_day:
+        raise HTTPException(
+            status_code=status.HTTP_429_TOO_MANY_REQUESTS,
+            detail="Daily submission limit reached",
+        )
+
+    duplicate = db.exec(
+        select(Submission).where(
+            Submission.user_id == current_user.id,
+            Submission.audio_url == body.audio_url,
+            ~Submission.is_deleted,
+        )
+    ).first()
+    if duplicate:
+        raise HTTPException(
+            status_code=status.HTTP_409_CONFLICT,
+            detail="This audio file has already been submitted",
+        )
 
     # persona 유효성 선검증 (credit 차감 전)
     from app.models.persona import Persona

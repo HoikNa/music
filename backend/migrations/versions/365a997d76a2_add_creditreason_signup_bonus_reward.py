@@ -8,8 +8,6 @@ Create Date: 2026-05-05 00:03:01.536179
 from typing import Sequence, Union
 
 from alembic import op
-import sqlalchemy as sa
-import sqlmodel
 
 
 revision: str = '365a997d76a2'
@@ -19,6 +17,8 @@ depends_on: Union[str, Sequence[str], None] = None
 
 
 def upgrade() -> None:
+    if op.get_bind().dialect.name != "postgresql":
+        return
     op.execute("ALTER TYPE creditreason ADD VALUE IF NOT EXISTS 'signup_bonus'")
     op.execute("ALTER TYPE creditreason ADD VALUE IF NOT EXISTS 'reward'")
 

@@ -1,8 +1,6 @@
 from unittest.mock import patch
 import uuid
 
-import pytest
-
 
 def _submission_payload(user_id: str) -> dict:
     return {

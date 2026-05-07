@@ -1,4 +1,4 @@
-"""Claude API 기반 페르소나 피드백 생성."""
+"""LLM 기반 페르소나 피드백 생성."""
 import json
 import re
 
@@ -73,12 +73,9 @@ def generate(
     title: str,
 ) -> dict:
     """
-    Claude API로 페르소나 화법의 피드백을 생성한다.
+    페르소나 화법의 피드백을 생성한다.
     API 키가 없거나 호출 실패 시 None을 반환한다.
     """
-    if not settings.anthropic_api_key:
-        return None
-
     system_prompt = _PERSONA_PROMPTS.get(persona_name, _FALLBACK_SYSTEM)
     user_prompt = _USER_PROMPT_TEMPLATE.format(
         pitch=dim_scores["pitch"],
@@ -90,6 +87,43 @@ def generate(
         title=title or "제목 없음",
     )
 
+    if settings.feedback_provider == "openai" and settings.openai_api_key:
+        result = _generate_openai(system_prompt, user_prompt)
+        if result is not None:
+            return result
+
+    if settings.anthropic_api_key:
+        return _generate_anthropic(system_prompt, user_prompt)
+
+    return None
+
+
+def _extract_json(raw: str) -> dict:
+    match = re.search(r"\{.*\}", raw, re.DOTALL)
+    if match:
+        raw = match.group(0)
+    return json.loads(raw)
+
+
+def _generate_openai(system_prompt: str, user_prompt: str) -> dict | None:
+    try:
+        from openai import OpenAI
+
+        client = OpenAI(api_key=settings.openai_api_key)
+        response = client.responses.create(
+            model=settings.feedback_model,
+            input=[
+                {"role": "system", "content": system_prompt},
+                {"role": "user", "content": user_prompt},
+            ],
+            text={"format": {"type": "json_object"}},
+        )
+        return _extract_json(response.output_text.strip())
+    except Exception:
+        return None
+
+
+def _generate_anthropic(system_prompt: str, user_prompt: str) -> dict | None:
     try:
         client = anthropic.Anthropic(api_key=settings.anthropic_api_key)
         message = client.messages.create(
@@ -99,9 +133,6 @@ def generate(
             messages=[{"role": "user", "content": user_prompt}],
         )
         raw = message.content[0].text.strip()
-        match = re.search(r"\{.*\}", raw, re.DOTALL)
-        if match:
-            raw = match.group(0)
-        return json.loads(raw)
+        return _extract_json(raw)
     except Exception:
         return None

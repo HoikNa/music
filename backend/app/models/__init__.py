@@ -4,6 +4,9 @@ from app.models.submission import Submission, SubmissionPersona, SubmissionStatu
 from app.models.score import BaseScore, PersonaScore, Feedback
 from app.models.ranking import RankingPeriod, RankingEntry, PeriodType, PeriodStatus
 from app.models.tournament import TournamentTicket
+from app.models.master_score import MasterScore
+from app.models.validation import SubmissionValidationCheck, ValidationCheckType, ValidationStatus
+from app.models.generated_asset import GeneratedAsset, GeneratedAssetType, GeneratedAssetStatus
 from app.models.credit import Credit, CreditTransaction, CreditReason
 from app.models.refresh_token import RefreshToken
 
@@ -14,6 +17,9 @@ __all__ = [
     "BaseScore", "PersonaScore", "Feedback",
     "RankingPeriod", "RankingEntry", "PeriodType", "PeriodStatus",
     "TournamentTicket",
+    "MasterScore",
+    "SubmissionValidationCheck", "ValidationCheckType", "ValidationStatus",
+    "GeneratedAsset", "GeneratedAssetType", "GeneratedAssetStatus",
     "Credit", "CreditTransaction", "CreditReason",
     "RefreshToken",
 ]

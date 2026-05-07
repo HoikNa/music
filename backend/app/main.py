@@ -7,7 +7,7 @@ from fastapi.middleware.cors import CORSMiddleware
 from mangum import Mangum
 
 from app.config import settings
-from app.routers import auth, submissions, uploads, personas, rankings, credits, users
+from app.routers import auth, submissions, uploads, personas, rankings, credits, users, tournament, ai
 
 if settings.sentry_dsn:
     sentry_sdk.init(dsn=settings.sentry_dsn, environment=settings.environment)
@@ -52,6 +52,8 @@ app.include_router(personas.router, prefix=PREFIX)
 app.include_router(rankings.router, prefix=PREFIX)
 app.include_router(credits.router, prefix=PREFIX)
 app.include_router(users.router, prefix=PREFIX)
+app.include_router(tournament.router, prefix=PREFIX)
+app.include_router(ai.router, prefix=PREFIX)
 
 
 @app.get("/health")
