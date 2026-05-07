@@ -2,6 +2,7 @@ import json
 import logging
 import os
 import uuid
+from urllib.parse import urlparse
 from fastapi import APIRouter, BackgroundTasks, Depends, HTTPException, status
 from pydantic import BaseModel
 from sqlmodel import Session, select
@@ -14,7 +15,7 @@ from app.models.score import BaseScore, PersonaScore, Feedback
 from app.models.persona import Persona
 from app.models.user import User
 from app.services import credit_service
-from app.services.scoring_service import run_scoring
+from app.services.scoring_service import run_scoring, _mark_rejected
 from app.models.credit import CreditReason
 
 router = APIRouter(prefix="/submissions", tags=["submissions"])
@@ -80,7 +81,11 @@ def _serialize_submission(submission: Submission, db: Session) -> dict:
     }
 
 
-def _enqueue_scoring(submission_id: uuid.UUID, background_tasks: BackgroundTasks) -> None:
+def _enqueue_scoring(
+    submission_id: uuid.UUID,
+    background_tasks: BackgroundTasks,
+    db: Session,
+) -> None:
     function_name = os.getenv("AWS_LAMBDA_FUNCTION_NAME")
     if function_name:
         import boto3
@@ -96,6 +101,7 @@ def _enqueue_scoring(submission_id: uuid.UUID, background_tasks: BackgroundTasks
             )
         except Exception:
             logger.exception("Failed to enqueue scoring for submission %s", submission_id)
+            _mark_rejected(db, submission_id, "채점 큐 등록 실패. 크레딧이 환불됩니다.")
         return
 
     background_tasks.add_task(run_scoring, submission_id)
@@ -108,6 +114,13 @@ def create_submission(
     db: Session = Depends(get_db),
     current_user: User = Depends(get_current_user),
 ):
+    # audio_url 소유권 검증 (credit 차감 전)
+    from app.config import settings as _settings
+    parsed = urlparse(body.audio_url)
+    expected_prefix = f"/audio/{current_user.id}/"
+    if not parsed.path.startswith(expected_prefix) or _settings.s3_bucket not in parsed.netloc:
+        raise HTTPException(status_code=400, detail="Invalid audio_url")
+
     # persona 유효성 선검증 (credit 차감 전)
     from app.models.persona import Persona
     for pid in body.persona_ids:
@@ -140,7 +153,7 @@ def create_submission(
 
     db.commit()
     db.refresh(submission)
-    _enqueue_scoring(submission.id, background_tasks)
+    _enqueue_scoring(submission.id, background_tasks, db)
     return _serialize_submission(submission, db)
 
 

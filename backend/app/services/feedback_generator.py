@@ -90,17 +90,18 @@ def generate(
         title=title or "제목 없음",
     )
 
-    client = anthropic.Anthropic(api_key=settings.anthropic_api_key)
-    message = client.messages.create(
-        model="claude-haiku-4-5-20251001",
-        max_tokens=1024,
-        system=system_prompt,
-        messages=[{"role": "user", "content": user_prompt}],
-    )
-
-    raw = message.content[0].text.strip()
-    # JSON 블록이 있으면 추출
-    match = re.search(r"\{.*\}", raw, re.DOTALL)
-    if match:
-        raw = match.group(0)
-    return json.loads(raw)
+    try:
+        client = anthropic.Anthropic(api_key=settings.anthropic_api_key)
+        message = client.messages.create(
+            model="claude-haiku-4-5-20251001",
+            max_tokens=1024,
+            system=system_prompt,
+            messages=[{"role": "user", "content": user_prompt}],
+        )
+        raw = message.content[0].text.strip()
+        match = re.search(r"\{.*\}", raw, re.DOTALL)
+        if match:
+            raw = match.group(0)
+        return json.loads(raw)
+    except Exception:
+        return None
