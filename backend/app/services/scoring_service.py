@@ -8,7 +8,8 @@ from app.config import settings
 from app.models.score import BaseScore, PersonaScore, Feedback
 from app.models.persona import Persona, PersonaWeight, PersonaDimension
 from app.models.submission import Submission, SubmissionPersona, SubmissionStatus
-from app.services import audio_analyzer, feedback_generator
+from app.services import audio_analyzer, feedback_generator, credit_service
+from app.models.credit import CreditReason
 
 DIMENSION_FIELD_MAP: dict[PersonaDimension, str] = {
     PersonaDimension.pitch: "pitch_score",
@@ -28,7 +29,10 @@ def _mark_rejected(db: Session, submission_id: uuid.UUID, reason: str) -> None:
         submission.reject_reason = reason
         submission.updated_at = datetime.utcnow()
         db.add(submission)
-        db.commit()
+        credit_service.add_credit(
+            db, submission.user_id, 1, CreditReason.refund,
+            note=f"채점 실패 환불 (submission {submission_id})",
+        )
 
 
 def _compute_persona_score(
