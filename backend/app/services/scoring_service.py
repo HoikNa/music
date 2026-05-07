@@ -8,6 +8,7 @@ from app.config import settings
 from app.models.score import BaseScore, PersonaScore, Feedback
 from app.models.persona import Persona, PersonaWeight, PersonaDimension
 from app.models.submission import Submission, SubmissionPersona, SubmissionStatus
+from app.models.ranking import RankingEntry, RankingPeriod, PeriodStatus
 from app.services import audio_analyzer, feedback_generator, credit_service
 from app.models.credit import CreditReason
 
@@ -200,6 +201,9 @@ def run_scoring(submission_id: uuid.UUID) -> None:
                 db.add(feedback)
                 db.commit()
 
+            # ── RankingEntry upsert ───────────────────────────────────────
+            _upsert_ranking_entries(db, submission_id)
+
             submission = db.get(Submission, submission_id)
             submission.status = SubmissionStatus.scored
             submission.updated_at = datetime.utcnow()
@@ -211,11 +215,72 @@ def run_scoring(submission_id: uuid.UUID) -> None:
             _mark_rejected(db, submission_id, "채점 중 오류가 발생했습니다. 크레딧이 환불됩니다.")
 
 
+def _upsert_ranking_entries(db: Session, submission_id: uuid.UUID) -> None:
+    """채점 완료 후 각 페르소나의 활성 RankingPeriod에 RankingEntry를 upsert하고 순위를 재계산."""
+    from datetime import date
+    submission = db.get(Submission, submission_id)
+    if not submission:
+        return
+
+    persona_scores = db.exec(
+        select(PersonaScore).where(PersonaScore.submission_id == submission_id)
+    ).all()
+
+    for ps in persona_scores:
+        period = db.exec(
+            select(RankingPeriod).where(
+                RankingPeriod.persona_id == ps.persona_id,
+                RankingPeriod.status == PeriodStatus.active,
+            )
+        ).first()
+        if not period:
+            continue
+
+        existing = db.exec(
+            select(RankingEntry).where(
+                RankingEntry.period_id == period.id,
+                RankingEntry.submission_id == submission_id,
+            )
+        ).first()
+
+        if existing:
+            existing.persona_score = ps.persona_score
+            existing.updated_at = datetime.utcnow()
+            db.add(existing)
+        else:
+            entry = RankingEntry(
+                period_id=period.id,
+                submission_id=submission_id,
+                user_id=submission.user_id,
+                rank=0,
+                persona_score=ps.persona_score,
+            )
+            db.add(entry)
+
+        db.flush()
+
+        # 해당 period 전체 순위 재계산
+        all_entries = db.exec(
+            select(RankingEntry)
+            .where(RankingEntry.period_id == period.id)
+            .order_by(RankingEntry.persona_score.desc())  # type: ignore[union-attr]
+        ).all()
+        for rank, entry in enumerate(all_entries, start=1):
+            if entry.rank != rank:
+                entry.previous_rank = entry.rank
+                entry.rank = rank
+                entry.updated_at = datetime.utcnow()
+                db.add(entry)
+
+    db.flush()
+
+
 def recover_stale_submissions() -> None:
     from datetime import timedelta
     engine = create_engine(settings.database_url)
     with Session(engine) as db:
-        cutoff = datetime.utcnow() - timedelta(minutes=10)
+        timeout = settings.stale_submission_timeout_minutes
+        cutoff = datetime.utcnow() - timedelta(minutes=timeout)
         stale = db.exec(
             select(Submission).where(
                 Submission.status.in_([SubmissionStatus.validating, SubmissionStatus.scoring]),

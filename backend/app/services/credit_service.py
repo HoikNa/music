@@ -1,5 +1,6 @@
 import uuid
 from fastapi import HTTPException, status
+from sqlalchemy import select as sa_select
 from sqlmodel import Session, select
 
 from app.models.credit import Credit, CreditTransaction, CreditReason
@@ -18,8 +19,7 @@ def get_or_create_credit(db: Session, user_id: uuid.UUID) -> Credit:
                 reason=CreditReason.signup_bonus,
             )
         )
-        db.commit()
-        db.refresh(credit)
+        db.flush()
     elif credit.balance == 0 and not db.exec(
         select(CreditTransaction).where(CreditTransaction.user_id == user_id)
     ).first():
@@ -32,8 +32,7 @@ def get_or_create_credit(db: Session, user_id: uuid.UUID) -> Credit:
                 reason=CreditReason.signup_bonus,
             )
         )
-        db.commit()
-        db.refresh(credit)
+        db.flush()
     return credit
 
 
@@ -45,7 +44,14 @@ def deduct_credit(
     submission_id: uuid.UUID | None = None,
     commit: bool = True,
 ) -> Credit:
-    credit = get_or_create_credit(db, user_id)
+    # SELECT FOR UPDATE — 동시 요청에서 음수 잔액 방지
+    credit = db.exec(
+        sa_select(Credit).where(Credit.user_id == user_id).with_for_update()
+    ).first()
+    if not credit:
+        credit = get_or_create_credit(db, user_id)
+        db.flush()
+
     if credit.balance < amount:
         raise HTTPException(status_code=status.HTTP_402_PAYMENT_REQUIRED, detail="Insufficient credits")
 

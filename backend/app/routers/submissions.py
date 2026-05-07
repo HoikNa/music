@@ -4,7 +4,7 @@ import os
 import uuid
 from urllib.parse import urlparse
 from fastapi import APIRouter, BackgroundTasks, Depends, HTTPException, status
-from pydantic import BaseModel
+from pydantic import BaseModel, field_validator, model_validator
 from sqlmodel import Session, select
 
 from app.dependencies.auth import get_current_user
@@ -30,6 +30,34 @@ class SubmissionCreate(BaseModel):
     duration_sec: int
     ranking_mode: RankingMode = RankingMode.both
     persona_ids: list[uuid.UUID]
+
+    @field_validator("title")
+    @classmethod
+    def validate_title(cls, v: str) -> str:
+        if not v or len(v) > 100:
+            raise ValueError("title must be 1–100 characters")
+        return v
+
+    @field_validator("lyrics")
+    @classmethod
+    def validate_lyrics(cls, v: str | None) -> str | None:
+        if v and len(v) > 5000:
+            raise ValueError("lyrics must be ≤ 5000 characters")
+        return v
+
+    @field_validator("duration_sec")
+    @classmethod
+    def validate_duration(cls, v: int) -> int:
+        if not (10 <= v <= 600):
+            raise ValueError("duration_sec must be 10–600")
+        return v
+
+    @field_validator("persona_ids")
+    @classmethod
+    def validate_persona_ids(cls, v: list[uuid.UUID]) -> list[uuid.UUID]:
+        if not (1 <= len(v) <= 3):
+            raise ValueError("persona_ids must contain 1–3 items")
+        return v
 
 
 def _serialize_submission(submission: Submission, db: Session) -> dict:

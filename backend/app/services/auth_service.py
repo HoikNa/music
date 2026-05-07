@@ -30,7 +30,7 @@ def create_access_token(user_id: uuid.UUID) -> str:
 
 
 def create_refresh_token(user_id: uuid.UUID) -> str:
-    expire = datetime.utcnow() + timedelta(days=7)
+    expire = datetime.utcnow() + timedelta(days=settings.jwt_refresh_expire_days)
     return jwt.encode(
         {"sub": str(user_id), "exp": expire, "type": "refresh"},
         settings.jwt_secret,

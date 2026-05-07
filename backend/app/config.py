@@ -16,6 +16,9 @@ class Settings(BaseSettings):
     s3_bucket_name: str = "vertualowl-audio"
     redis_url: str = "redis://localhost:6379/0"
     anthropic_api_key: str | None = None
+    stale_submission_timeout_minutes: int = 10
+    rate_limit_login_per_minute: int = 10
+    rate_limit_register_per_minute: int = 5
 
     class Config:
         env_file = ".env"

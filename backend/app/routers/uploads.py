@@ -40,6 +40,8 @@ def get_presigned_url(
 ):
     if body.content_type not in ALLOWED_CONTENT_TYPES:
         raise HTTPException(status_code=400, detail="Unsupported audio format")
+    if body.effective_size <= 0:
+        raise HTTPException(status_code=400, detail="File size must be greater than 0")
     if body.effective_size > MAX_SIZE_BYTES:
         raise HTTPException(status_code=400, detail="File too large (max 50MB)")
 

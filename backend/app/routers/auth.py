@@ -1,3 +1,5 @@
+import time
+from collections import defaultdict
 from fastapi import APIRouter, Depends, Response, Request, HTTPException, status
 from jose import JWTError, jwt
 from pydantic import BaseModel, EmailStr
@@ -10,6 +12,20 @@ from app.models.user import User
 from app.services import auth_service
 
 router = APIRouter(prefix="/auth", tags=["auth"])
+
+# IP별 (timestamp 리스트) — Lambda 인스턴스 단위 rate limit
+_rate_store: dict[str, list[float]] = defaultdict(list)
+
+
+def _check_rate_limit(request: Request, limit: int) -> None:
+    ip = request.client.host if request.client else "unknown"
+    now = time.time()
+    window = 60.0
+    timestamps = [t for t in _rate_store[ip] if now - t < window]
+    _rate_store[ip] = timestamps
+    if len(timestamps) >= limit:
+        raise HTTPException(status_code=status.HTTP_429_TOO_MANY_REQUESTS, detail="Too many requests")
+    _rate_store[ip].append(now)
 
 
 class RegisterRequest(BaseModel):
@@ -29,7 +45,8 @@ class TokenResponse(BaseModel):
 
 
 @router.post("/register", response_model=TokenResponse, status_code=201)
-def register(body: RegisterRequest, response: Response, db: Session = Depends(get_db)):
+def register(body: RegisterRequest, response: Response, request: Request, db: Session = Depends(get_db)):
+    _check_rate_limit(request, settings.rate_limit_register_per_minute)
     user = auth_service.register_user(db, body.email, body.password, body.nickname)
     access_token = auth_service.create_access_token(user.id)
     refresh_token = auth_service.create_refresh_token(user.id)
@@ -38,7 +55,8 @@ def register(body: RegisterRequest, response: Response, db: Session = Depends(ge
 
 
 @router.post("/login", response_model=TokenResponse)
-def login(body: LoginRequest, response: Response, db: Session = Depends(get_db)):
+def login(body: LoginRequest, response: Response, request: Request, db: Session = Depends(get_db)):
+    _check_rate_limit(request, settings.rate_limit_login_per_minute)
     user = auth_service.authenticate_user(db, body.email, body.password)
     access_token = auth_service.create_access_token(user.id)
     refresh_token = auth_service.create_refresh_token(user.id)

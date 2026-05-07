@@ -97,7 +97,7 @@ export default function SubmissionDetailPage() {
             <h2 className="font-bold">기본기 채점 결과</h2>
             <div className="text-3xl font-black tabular-nums" style={{ color: "var(--accent)" }}>
               {submission.base_score.total.toFixed(1)}
-              <span className="text-base font-normal text-[var(--text-muted)]"> / 100</span>
+              <span className="text-base font-normal text-[var(--text-muted)]"> / 20</span>
             </div>
           </div>
           <div className="space-y-3">
