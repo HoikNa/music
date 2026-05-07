@@ -13,5 +13,7 @@ RUN pip install awslambdaric --no-cache-dir && \
 COPY app/ app/
 COPY handler.py .
 
+ENV NUMBA_CACHE_DIR=/tmp
+
 ENTRYPOINT ["/usr/local/bin/python", "-m", "awslambdaric"]
 CMD ["handler.handler"]
