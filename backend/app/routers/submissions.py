@@ -23,6 +23,12 @@ router = APIRouter(prefix="/submissions", tags=["submissions"])
 logger = logging.getLogger(__name__)
 
 
+def run_scoring(submission_id: uuid.UUID) -> None:
+    from app.services.scoring_service import run_scoring as _run_scoring
+
+    _run_scoring(submission_id)
+
+
 class SubmissionCreate(BaseModel):
     title: str
     genre: str
@@ -139,7 +145,6 @@ def _enqueue_scoring(
             _mark_rejected(db, submission_id, "채점 큐 등록 실패. 크레딧이 환불됩니다.")
         return
 
-    from app.services.scoring_service import run_scoring
     background_tasks.add_task(run_scoring, submission_id)
 
 
