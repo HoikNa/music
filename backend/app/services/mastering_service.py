@@ -4,12 +4,12 @@ import subprocess
 import tempfile
 from urllib.parse import urlparse
 
-import boto3
-
 from app.config import settings
 
 
 def _download_from_s3(audio_url: str, dest_path: str) -> None:
+    import boto3
+
     parsed = urlparse(audio_url)
     bucket = parsed.netloc.split(".")[0]
     key = parsed.path.lstrip("/")
@@ -17,6 +17,8 @@ def _download_from_s3(audio_url: str, dest_path: str) -> None:
 
 
 def _upload_to_s3(source_path: str, key: str) -> str:
+    import boto3
+
     boto3.client("s3", region_name=settings.aws_region).upload_file(
         source_path,
         settings.s3_bucket,

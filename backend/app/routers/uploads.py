@@ -1,5 +1,4 @@
 import uuid
-import boto3
 from fastapi import APIRouter, Depends, HTTPException
 from pydantic import BaseModel
 
@@ -38,6 +37,8 @@ def get_presigned_url(
     body: PresignedUrlRequest,
     current_user: User = Depends(get_current_user),
 ):
+    import boto3
+
     if body.content_type not in ALLOWED_CONTENT_TYPES:
         raise HTTPException(status_code=400, detail="Unsupported audio format")
     if body.effective_size <= 0:
@@ -73,6 +74,8 @@ def verify_upload(
     current_user: User = Depends(get_current_user),
 ):
     """클라이언트 업로드 완료 후 S3 HEAD로 실제 파일 존재·크기·타입 검증."""
+    import boto3
+
     # key는 반드시 해당 사용자 소유여야 함
     if not body.key.startswith(f"audio/{current_user.id}/"):
         raise HTTPException(status_code=403, detail="Forbidden")

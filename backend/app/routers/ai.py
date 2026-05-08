@@ -10,7 +10,6 @@ from app.dependencies.db import get_db
 from app.models.generated_asset import GeneratedAsset, GeneratedAssetStatus, GeneratedAssetType
 from app.models.submission import Submission
 from app.models.user import User
-from app.services import lyrics_service, mastering_service, music_generation_service
 
 router = APIRouter(prefix="/ai", tags=["ai"])
 
@@ -55,6 +54,8 @@ def generate_lyrics(
     db: Session = Depends(get_db),
     current_user: User = Depends(get_current_user),
 ):
+    from app.services import lyrics_service
+
     prompt = f"{body.theme} / {body.genre} / {body.mood}"
     lyrics, provider, model = lyrics_service.generate_lyrics(
         theme=body.theme,
@@ -84,6 +85,8 @@ def compose_track(
     db: Session = Depends(get_db),
     current_user: User = Depends(get_current_user),
 ):
+    from app.services import music_generation_service
+
     result = music_generation_service.generate_demo_track(
         prompt=body.prompt,
         genre=body.genre,
@@ -114,6 +117,8 @@ def master_audio(
     db: Session = Depends(get_db),
     current_user: User = Depends(get_current_user),
 ):
+    from app.services import mastering_service
+
     audio_url = body.audio_url
     source_submission_id = body.submission_id
     if source_submission_id:

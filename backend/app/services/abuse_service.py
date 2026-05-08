@@ -5,7 +5,6 @@ import uuid
 from dataclasses import dataclass
 
 from fastapi import Request
-from redis import Redis
 
 from app.config import settings
 
@@ -19,7 +18,9 @@ class AbuseDecision:
     flags: dict[str, object]
 
 
-def _redis() -> Redis | None:
+def _redis():
+    from redis import Redis
+
     try:
         return Redis.from_url(
             settings.redis_url,
