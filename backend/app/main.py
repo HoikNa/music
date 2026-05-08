@@ -88,6 +88,9 @@ def _get_app():
 
 
 class LazyASGIApp:
+    def __getattr__(self, name):
+        return getattr(_get_app(), name)
+
     async def __call__(self, scope, receive, send):
         await _get_app()(scope, receive, send)
 
