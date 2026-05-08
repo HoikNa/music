@@ -20,7 +20,7 @@ logger = logging.getLogger(__name__)
 async def lifespan(app: FastAPI):
     # cold start 시 stale submission 복구
     try:
-        from app.services.scoring_service import recover_stale_submissions
+        from app.services.stale_submission_service import recover_stale_submissions
         recover_stale_submissions()
     except Exception:
         logger.exception("stale submission 복구 실패")
