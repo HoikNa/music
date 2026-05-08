@@ -1,6 +1,8 @@
 """채점 파이프라인 — librosa 오디오 분석 + Claude API 피드백."""
 import logging
 import uuid
+import json
+import os
 from datetime import datetime, timedelta
 
 from sqlalchemy import update as sa_update
@@ -14,6 +16,7 @@ from app.models.ranking import RankingEntry, RankingPeriod, PeriodStatus
 from app.models.master_score import MasterScore
 from app.models.tournament import TournamentTicket
 from app.services import audio_analyzer, feedback_generator, credit_service, validation_service
+from app.services.feedback_tts_service import generate_feedback_audio
 from app.models.credit import CreditReason
 
 logger = logging.getLogger(__name__)
@@ -122,6 +125,28 @@ def _fallback_feedback(dim_scores: dict[str, float]) -> dict:
     return {"summary": summary, "strengths": strengths[:3], "improvements": improvements[:3]}
 
 
+def _enqueue_feedback_tts(feedback_id: uuid.UUID) -> bool:
+    function_name = os.getenv("AWS_LAMBDA_FUNCTION_NAME")
+    if not function_name:
+        return False
+
+    import boto3
+
+    try:
+        boto3.client("lambda").invoke(
+            FunctionName=function_name,
+            InvocationType="Event",
+            Payload=json.dumps({
+                "source": "vertualowl.feedback_tts",
+                "feedback_id": str(feedback_id),
+            }).encode("utf-8"),
+        )
+        return True
+    except Exception:
+        logger.exception("Failed to enqueue feedback TTS for feedback %s", feedback_id)
+        return False
+
+
 def run_scoring(submission_id: uuid.UUID) -> None:
     """BackgroundTasks에서 실행되는 실제 채점 워커."""
     engine = create_engine(settings.database_url)
@@ -138,6 +163,7 @@ def run_scoring(submission_id: uuid.UUID) -> None:
         submission = db.get(Submission, submission_id)
 
         try:
+            feedback_ids: list[uuid.UUID] = []
 
             # 중복 실행 방지 — BaseScore가 이미 있으면 이전 실행이 완료한 것
             existing = db.exec(
@@ -214,6 +240,7 @@ def run_scoring(submission_id: uuid.UUID) -> None:
                 )
                 db.add(feedback)
                 db.flush()
+                feedback_ids.append(feedback.id)
 
             # ── RankingEntry upsert ───────────────────────────────────────
             _upsert_ranking_entries(db, submission_id)
@@ -224,6 +251,13 @@ def run_scoring(submission_id: uuid.UUID) -> None:
             submission.updated_at = datetime.utcnow()
             db.add(submission)
             db.commit()
+
+            for feedback_id in feedback_ids:
+                if not _enqueue_feedback_tts(feedback_id):
+                    try:
+                        generate_feedback_audio(db, feedback_id)
+                    except Exception:
+                        logger.exception("Failed to run inline feedback TTS for %s", feedback_id)
 
         except Exception as exc:
             db.rollback()
@@ -236,7 +270,7 @@ def run_scoring(submission_id: uuid.UUID) -> None:
 def _upsert_ranking_entries(db: Session, submission_id: uuid.UUID) -> None:
     """채점 완료 후 각 페르소나의 활성 RankingPeriod에 RankingEntry를 upsert하고 순위를 재계산."""
     submission = db.get(Submission, submission_id)
-    if not submission:
+    if not submission or submission.is_ranking_excluded:
         return
 
     persona_scores = db.exec(

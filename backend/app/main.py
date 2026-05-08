@@ -69,4 +69,8 @@ def handler(event, context):
         from app.services.scoring_service import run_scoring
         run_scoring(uuid.UUID(event["submission_id"]))
         return {"ok": True}
+    if event.get("source") == "vertualowl.feedback_tts":
+        from app.services.feedback_tts_service import run_feedback_tts
+        run_feedback_tts(uuid.UUID(event["feedback_id"]))
+        return {"ok": True}
     return asgi_handler(event, context)

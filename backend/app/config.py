@@ -19,6 +19,9 @@ class Settings(BaseSettings):
     openai_api_key: str | None = None
     feedback_provider: str = "openai"
     feedback_model: str = "gpt-4.1-mini"
+    feedback_tts_model: str = "gpt-4o-mini-tts"
+    feedback_tts_voice: str = "alloy"
+    feedback_tts_enabled: bool = True
     lyrics_model: str = "gpt-4.1-mini"
     moderation_model: str = "omni-moderation-latest"
     music_generation_provider: str = "mock"
@@ -33,6 +36,10 @@ class Settings(BaseSettings):
     rate_limit_login_per_minute: int = 10
     rate_limit_register_per_minute: int = 5
     max_submissions_per_day: int = 10
+    abuse_user_submissions_per_hour: int = 5
+    abuse_ip_submissions_per_hour: int = 20
+    abuse_device_submissions_per_hour: int = 8
+    abuse_audio_submissions_per_hour: int = 3
 
     class Config:
         env_file = ".env"

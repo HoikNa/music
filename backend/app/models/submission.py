@@ -1,7 +1,8 @@
 import uuid
 from datetime import datetime
 from enum import Enum
-from typing import Optional
+from typing import Optional, Any
+from sqlalchemy import JSON, Column
 from sqlmodel import Field, SQLModel
 
 
@@ -33,6 +34,9 @@ class Submission(SQLModel, table=True):
     reject_reason: Optional[str] = Field(default=None)
     ranking_mode: RankingMode = Field(default=RankingMode.both)
     credit_used: int = Field(default=1)
+    is_ranking_excluded: bool = Field(default=False, index=True)
+    abuse_risk_score: float = Field(default=0.0)
+    abuse_flags: Optional[dict[str, Any]] = Field(default=None, sa_column=Column(JSON))
     is_deleted: bool = Field(default=False)
     deleted_at: Optional[datetime] = Field(default=None)
     created_at: datetime = Field(default_factory=datetime.utcnow, index=True)

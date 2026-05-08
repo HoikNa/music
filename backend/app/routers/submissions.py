@@ -4,7 +4,7 @@ import os
 import uuid
 from datetime import datetime
 from urllib.parse import urlparse
-from fastapi import APIRouter, BackgroundTasks, Depends, HTTPException, status
+from fastapi import APIRouter, BackgroundTasks, Depends, HTTPException, Request, status
 from pydantic import BaseModel, field_validator
 from sqlalchemy import func
 from sqlmodel import Session, select
@@ -16,7 +16,7 @@ from app.models.submission import Submission, SubmissionPersona, SubmissionStatu
 from app.models.score import BaseScore, PersonaScore, Feedback
 from app.models.persona import Persona
 from app.models.user import User
-from app.services import credit_service
+from app.services import abuse_service, credit_service
 from app.services.scoring_service import run_scoring, _mark_rejected
 from app.models.credit import CreditReason
 
@@ -85,6 +85,8 @@ def _serialize_submission(submission: Submission, db: Session) -> dict:
                     "summary": feedback.summary,
                     "strengths": feedback.strengths,
                     "improvements": feedback.improvements,
+                    "audio_url": feedback.audio_url,
+                    "audio_status": feedback.audio_status,
                 } if feedback else None,
             })
 
@@ -98,6 +100,9 @@ def _serialize_submission(submission: Submission, db: Session) -> dict:
         "status": submission.status,
         "reject_reason": submission.reject_reason,
         "ranking_mode": submission.ranking_mode,
+        "is_ranking_excluded": submission.is_ranking_excluded,
+        "abuse_risk_score": submission.abuse_risk_score,
+        "abuse_flags": submission.abuse_flags,
         "created_at": submission.created_at.isoformat(),
         "base_score": {
             "pitch": base_score.pitch_score,
@@ -141,6 +146,7 @@ def _enqueue_scoring(
 def create_submission(
     body: SubmissionCreate,
     background_tasks: BackgroundTasks,
+    request: Request,
     db: Session = Depends(get_db),
     current_user: User = Depends(get_current_user),
 ):
@@ -196,6 +202,8 @@ def create_submission(
         if not persona or not persona.is_active:
             raise HTTPException(status_code=400, detail=f"Invalid persona: {pid}")
 
+    abuse_decision = abuse_service.evaluate_submission_abuse(request, current_user.id, body.audio_url)
+
     # submission, credit 차감, persona 연결을 단일 트랜잭션으로
     submission = Submission(
         user_id=current_user.id,
@@ -205,6 +213,9 @@ def create_submission(
         audio_url=body.audio_url,
         duration_sec=body.duration_sec,
         ranking_mode=body.ranking_mode,
+        is_ranking_excluded=abuse_decision.is_ranking_excluded,
+        abuse_risk_score=abuse_decision.risk_score,
+        abuse_flags=abuse_decision.flags,
         status=SubmissionStatus.pending,
     )
     db.add(submission)
