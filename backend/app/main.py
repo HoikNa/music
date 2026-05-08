@@ -18,6 +18,10 @@ logger = logging.getLogger(__name__)
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
+    if not settings.recover_stale_on_startup:
+        yield
+        return
+
     # cold start 시 stale submission 복구
     try:
         from app.services.stale_submission_service import recover_stale_submissions

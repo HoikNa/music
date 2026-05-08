@@ -33,6 +33,7 @@ class Settings(BaseSettings):
     acrcloud_access_secret: str | None = None
     ai_music_probability_threshold: float = 0.8
     stale_submission_timeout_minutes: int = 10
+    recover_stale_on_startup: bool = False
     rate_limit_login_per_minute: int = 10
     rate_limit_register_per_minute: int = 5
     max_submissions_per_day: int = 10
