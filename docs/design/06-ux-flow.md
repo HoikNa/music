@@ -1,178 +1,190 @@
 # 06. UX Flow
 
+현재 구현 기준의 사용자 플로우. 공개 URL은 `https://frontend-eta-eosin.vercel.app`.
+
 ---
 
 ## 전체 페이지 이동 경로
 
+```text
+/                         공개 홈
+/login                    로그인
+/register                 회원가입
+
+/(dashboard)              AuthGate 보호. 일부 공개 경로 예외
+├── /dashboard            홈 대시보드
+├── /ai-studio            가사/데모/마스터링 AI Studio
+├── /creator-studio       창작 스튜디오
+├── /contest              경연 현황
+├── /distribution         수익/유통 대시보드
+├── /explore              공개 탐색
+├── /submit               음원 제출
+├── /submissions          내 제출 목록
+├── /submissions/{id}     채점 결과 상세
+├── /rankings             공개 주간 차트
+├── /personas             페르소나 소개
+├── /credits              크레딧
+└── /admin                관리자 화면 초안
 ```
-/ → /dashboard (루트 리디렉션)
+
+`/rankings`, `/explore`는 미로그인 공개 접근 가능. 그 외 대시보드 경로는 미로그인 시 `/login?redirect=...`로 이동한다.
+
+---
+
+## 플로우 1: 회원가입/로그인
+
+```text
+/register
+  → 이메일 / 닉네임 / 비밀번호 입력
+  → 클라이언트 기본 검증
+  → POST /api/v1/auth/register
+  → access_token JSON 수신
+  → refresh_token HttpOnly Cookie 설정
+  → GET /api/v1/users/me
+  → Zustand auth store + sessionStorage 저장
+  → /dashboard
 
 /login
-  ├── 성공 → /dashboard
-  └── 소셜 OAuth → /api/auth/callback/{provider} → /dashboard
-/register
-  └── 성공 → /dashboard
-
-/(dashboard)  ← AuthGate 보호 (미로그인 → /login)
-├── /dashboard          홈 (프로젝트 현황, 통계, 최근 활동)
-├── /ai-studio          AI 작곡 인터페이스
-├── /creator-studio     DAW 협업 스튜디오
-├── /contest            경연 현황 + 리더보드
-├── /distribution       수익/스트리밍 대시보드
-├── /explore            디스커버리 피드
-├── /submit             음원 제출
-│   └── 제출 완료 → /submissions/{id}
-├── /submissions        내 제출 목록
-│   └── /submissions/{id}   채점 결과 상세
-├── /rankings           랭킹 스코어보드
-├── /personas           페르소나 소개
-└── /credits            크레딧 잔액 + 충전
+  → POST /api/v1/auth/login
+  → 동일 세션 저장 흐름
+  → redirect query가 안전하면 해당 경로, 아니면 /dashboard
 ```
+
+오류 메시지:
+
+| 상황 | 메시지 |
+|---|---|
+| 로그인 실패 | 이메일 또는 비밀번호를 확인해주세요 |
+| 이메일 중복 | 이미 가입된 이메일입니다. 로그인해주세요 |
+| 닉네임 중복 | 이미 사용 중인 닉네임입니다 |
+| 422 validation | 입력한 회원가입 정보를 다시 확인해주세요 |
 
 ---
 
-## 플로우 1: 회원가입
+## 플로우 2: 음원 제출
 
+```text
+/submit
+
+Step 1 파일 업로드
+  → POST /uploads/presign 또는 /uploads/presigned-url
+  → S3 PUT 직접 업로드
+  → 필요 시 POST /uploads/verify
+
+Step 2 곡 정보
+  → 제목
+  → 공식 장르 taxonomy 선택
+  → 가사 optional
+  → 참가 방식 ranking/challenge/both
+
+Step 3 페르소나 선택
+  → 1~3명 선택
+
+Step 4 확인/제출
+  → POST /submissions
+  → 크레딧 차감
+  → scoring 큐잉
+  → /submissions/{id}로 이동
 ```
-/login → 회원가입 → /register
-  ↓
-[이메일 / 닉네임 / 비밀번호 입력]
-  ↓ 유효성 검사 실패 → 인라인 에러 (shadcn FormMessage)
-  ↓ 성공
-    → POST /auth/register
-    → access_token → sessionStorage
-    → refresh_token → HttpOnly Cookie
-    → /dashboard (토스트: "환영합니다!")
-```
 
-**에러**: 닉네임 중복 → "이미 사용 중인 닉네임입니다" (409)
-**소셜**: 카카오/구글 버튼 → OAuth → callback → 동일 결과
-
----
-
-## 플로우 2: 음원 제출 (핵심)
-
-```
-/dashboard → /submit
-
-Step 1: 파일 업로드
-  [파일 드래그&드롭 또는 선택]
-  → POST /uploads/presign → S3 직접 업로드
-  → 업로드 완료 시 미리듣기 활성화
-  에러: 파일 크기 초과 → "파일이 너무 큽니다 (최대 200MB)"
-
-Step 2: 곡 정보 입력
-  [제목 / 장르 / 가사(선택)]
-  → 필수 미입력 시 인라인 에러
-
-Step 3: 페르소나 선택
-  [PersonaCard × N] 1~3개 선택
-  → 미선택 시 "최소 1명 이상 선택해주세요"
-
-Step 4: 확인 & 제출
-  [정보 요약] + 크레딧 차감 안내
-  → POST /submissions → 202
-  → /submissions/{id} 리디렉션
-```
+공식 장르 목록은 `GET /submissions/genres`와 `frontend/src/lib/musicGenres.ts`가 같은 체계를 사용한다.
 
 ---
 
 ## 플로우 3: 채점 결과 확인
 
+```text
+/submissions/{id}
+  → GET /submissions/{id} 3초 polling
+  → pending/validating/scoring/rejected/scored 상태 표시
+  → feedback audio_status가 queued/running이면 계속 polling
+  → scored + audio 완료/실패/skip이면 안정 상태
 ```
-/submissions/{id} (폴링)
-  → GET /submissions/{id} 3초 interval
-  → StatusStep: 대기중 → 검증중 → 채점중 → 완료
-  → scored 도달 시 폴링 중단, 결과 렌더
 
 화면 구성:
-  ├── 오디오 플레이어
-  ├── 기본기 점수 (ScoreBar × 5)
-  └── 페르소나별 탭
-       └── 페르소나 점수 + 피드백
-            ├── 총평
-            ├── 강점 3개 (타임스탬프 → 해당 시점 재생)
-            └── 개선점 3개
 
-하단 CTA:
-  ├── "다시 도전하기" → /submit
-  └── "랭킹 확인" → /rankings
-```
-
-**에러**: 채점 실패 → "채점 중 오류가 발생했습니다."
-**표절**: 반려 → "유사한 음원이 감지되었습니다."
+- 오디오 파일 정보
+- 운영 플래그: 랭킹 제외 여부, abuse risk, counter exceeded scope
+- 기본기 점수 5축
+- 페르소나별 피드백 카드
+- 음성 피드백 상태/재생
 
 ---
 
-## 플로우 4: 랭킹 스코어보드
+## 플로우 4: 랭킹
 
-```
+```text
 /rankings
-
-화면 구성:
-  ├── ScoreboardTimer (주간 마감 카운트다운)
-  ├── 탭: [종합] [김범수] [아이유] [박효신] [화사]
-  ├── 장르 필터
-  ├── TOP 3: 강조 표시
-  ├── 4위~100위: RankingRow 리스트
-  └── "내 순위" 고정 배너 (하단 sticky, 로그인 시)
-
-실시간: useWebSocket /ws/rankings → ranking.store 갱신
+  → GET /rankings/weekly
+  → 장르 필터 선택 시 GET /rankings/weekly?genre={code}
+  → TOP 100 리스트
+  → 로그인 사용자는 my_entry 표시
 ```
 
-**에러**: WebSocket 실패 → 폴링 폴백 (30초)
-**빈 상태**: "아직 참가자가 없습니다."
+장르 필터는 DB 쿼리 단계에서 적용한 뒤 TOP 100을 반환한다. WebSocket 실시간 갱신은 아직 구현되지 않았고, 현재 UI는 TanStack Query 기반 조회/새로고침이다.
 
 ---
 
-## 플로우 5: 로그아웃
+## 플로우 5: AI Studio
 
+```text
+/ai-studio
+  → GET /ai/assets 로 히스토리 조회
+
+가사 생성
+  → theme / genre / mood / keywords
+  → POST /ai/lyrics
+  → 결과 output_text 표시 및 history 저장
+
+데모 구성안
+  → 가사 또는 prompt 기반
+  → POST /ai/compose
+  → output_text blueprint 표시
+
+마스터링
+  → 내 제출 음원 선택 또는 직접 audio_url 입력
+  → target_lufs 설정
+  → POST /ai/mastering
+  → queued asset 생성
+  → GET /ai/assets polling으로 running/succeeded/failed 확인
 ```
-Header 아바타 → DropdownMenu → "로그아웃"
+
+OpenAI 키가 없거나 품질검사를 통과하지 못하면 fallback 결과가 저장되며, fallback reason은 asset `input_data.metadata.fallback_reason`에 남는다.
+
+---
+
+## 플로우 6: 로그아웃
+
+```text
+Header → 로그아웃
   → POST /auth/logout
-  → sessionStorage 클리어
-  → /login 리디렉션
+  → access token/sessionStorage clear
+  → Zustand user clear
+  → /login 또는 공개 홈 이동
 ```
 
 ---
 
 ## 권한별 접근 제어
 
-| 경로 | 미로그인 | 로그인(creator) | admin |
+| 경로 | 미로그인 | 로그인 creator | admin |
 |---|---|---|---|
-| `/login`, `/register` | ✅ | → /dashboard | → /dashboard |
-| `/(dashboard)/**` | → /login | ✅ | ✅ |
-| `/admin/**` | → /login | → 403 | ✅ |
-
-보호 주체: `AuthGate` 컴포넌트 (일반 페이지), `proxy.ts` 미들웨어 (`/admin`)
+| `/` | 가능 | 가능 | 가능 |
+| `/login`, `/register` | 가능 | `/dashboard`로 redirect 가능 | `/dashboard`로 redirect 가능 |
+| `/rankings`, `/explore` | 가능 | 가능 | 가능 |
+| 일반 dashboard 경로 | `/login` | 가능 | 가능 |
+| `/admin` | `/login` | 앱 레벨 제한 필요 | 가능 |
 
 ---
 
-## 각 화면 상태 정의
+## 상태/토스트
 
-| 화면 | 로딩 | 에러 | 빈 상태 |
-|---|---|---|---|
-| /dashboard | Skeleton | "데이터를 불러올 수 없습니다" | "첫 음원을 제출해보세요" + CTA |
-| /submissions | 리스트 Skeleton | "목록을 불러올 수 없습니다" | "아직 제출한 음원이 없습니다" + CTA |
-| /submissions/{id} | 전체 Skeleton | "채점 결과를 불러올 수 없습니다" | — |
-| /rankings | 리스트 Skeleton | "랭킹을 불러올 수 없습니다" | "참가자가 없습니다" |
-| /personas | 카드 Skeleton | "페르소나 정보를 불러올 수 없습니다" | — |
-| /credits | 잔액 Skeleton | "잔액을 불러올 수 없습니다" | — |
-| /ai-studio | Skeleton | "불러올 수 없습니다" | — |
-| /contest | Skeleton | "불러올 수 없습니다" | — |
-| /distribution | Skeleton | "불러올 수 없습니다" | — |
-| /explore | Skeleton | "불러올 수 없습니다" | "콘텐츠가 없습니다" |
-
----
-
-## 토스트 알림 발생 시점
-
-| 이벤트 | 타입 | 메시지 |
-|---|---|---|
-| 회원가입 성공 | success | "환영합니다!" |
-| 로그인 성공 | success | "로그인되었습니다" |
-| 제출 완료 (채점 시작) | info | "채점이 시작되었습니다. 잠시 기다려주세요" |
-| 채점 완료 | success | "채점이 완료되었습니다!" |
-| 제출 반려 | error | "제출이 반려되었습니다: {reason}" |
-| 크레딧 부족 | warning | "크레딧이 부족합니다. 충전 후 이용해주세요" |
-| 네트워크 오류 | error | "네트워크 오류가 발생했습니다. 다시 시도해주세요" |
+| 이벤트 | 메시지 |
+|---|---|
+| 회원가입 성공 | 환영합니다! 크레딧 10개가 지급되었습니다 |
+| 로그인 성공 | 로그인되었습니다 |
+| 가사 생성 성공 | 가사를 생성했습니다 |
+| 데모 생성 성공 | 데모 음원을 생성했습니다 / 데모 구성안을 생성했습니다 |
+| 마스터링 접수 | 마스터링 작업을 접수했습니다 |
+| 히스토리 로드 | 가사/데모/마스터링 기록을 불러왔습니다 |
+| 네트워크/API 실패 | 각 화면별 실패 토스트 |

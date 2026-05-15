@@ -1,172 +1,140 @@
 # 05. Frontend Architecture
 
-Next.js 15 App Router + React 19. 클라이언트 컴포넌트 위주 (인터랙티브한 대시보드 앱).
+Next.js 16 App Router + React 19 기반 대시보드형 웹 앱. Vercel production에서 공개 URL은 `https://frontend-eta-eosin.vercel.app`이다.
 
 ---
 
 ## 디렉토리 구조
 
-```
+```text
 frontend/src/
 ├── app/
 │   ├── (auth)/
-│   │   ├── login/
-│   │   │   └── page.tsx
-│   │   └── register/
-│   │       └── page.tsx
+│   │   ├── login/page.tsx
+│   │   └── register/page.tsx
 │   ├── (dashboard)/
-│   │   ├── layout.tsx            # AuthGate + Sidebar + Header
-│   │   ├── dashboard/
-│   │   │   └── page.tsx          # 홈 대시보드 (프로젝트 현황, 통계)
-│   │   ├── ai-studio/
-│   │   │   └── page.tsx          # AI 작곡 인터페이스
-│   │   ├── creator-studio/
-│   │   │   └── page.tsx          # DAW 협업 스튜디오
-│   │   ├── contest/
-│   │   │   └── page.tsx          # 경연 현황 + 리더보드
-│   │   ├── distribution/
-│   │   │   └── page.tsx          # 수익/유통 대시보드
-│   │   ├── explore/
-│   │   │   └── page.tsx          # 디스커버리 피드
-│   │   ├── submit/
-│   │   │   └── page.tsx          # 음원 제출
-│   │   ├── submissions/
-│   │   │   ├── page.tsx          # 내 제출 목록
-│   │   │   └── [id]/
-│   │   │       └── page.tsx      # 제출 상세 + 채점 결과
-│   │   ├── rankings/
-│   │   │   └── page.tsx          # 랭킹 스코어보드
-│   │   ├── personas/
-│   │   │   └── page.tsx          # 페르소나 소개
-│   │   └── credits/
-│   │       └── page.tsx          # 크레딧 잔액 + 충전
-│   ├── layout.tsx                # Root layout (Providers 주입, Playfair Display 폰트)
-│   ├── page.tsx                  # 루트 → /dashboard 리디렉션
-│   └── globals.css               # 디자인 토큰 + 컴포넌트 유틸 클래스
+│   │   ├── layout.tsx              # AuthGate + Header
+│   │   ├── admin/page.tsx          # 관리자 화면 초안
+│   │   ├── ai-studio/page.tsx      # 가사/데모/마스터링/히스토리
+│   │   ├── contest/page.tsx
+│   │   ├── creator-studio/page.tsx
+│   │   ├── credits/page.tsx
+│   │   ├── dashboard/page.tsx
+│   │   ├── distribution/page.tsx
+│   │   ├── explore/page.tsx
+│   │   ├── personas/page.tsx
+│   │   ├── rankings/page.tsx       # 장르 필터 포함 주간 차트
+│   │   ├── submissions/page.tsx
+│   │   ├── submissions/[id]/page.tsx
+│   │   └── submit/page.tsx
+│   ├── layout.tsx                  # Providers, font, metadata
+│   ├── page.tsx                    # 공개 홈
+│   └── globals.css                 # 디자인 토큰/유틸 클래스
 ├── components/
-│   ├── ui/                       # shadcn/ui 자동 생성 (수동 편집 금지)
-│   ├── auth/
-│   │   └── AuthGate.tsx          # 인증 필요 페이지 래퍼
-│   ├── common/
-│   │   ├── Providers.tsx         # TanStack Query + Toast Provider + 세션 복원
-│   │   └── ScoreBar.tsx          # 5축 점수 막대 시각화
-│   └── layout/
-│       ├── Sidebar.tsx           # 220px 사이드바 (nav + 크레딧 블록 + 유저 정보)
-│       └── Header.tsx            # 64px 상단 바
-├── stores/
-│   ├── auth.store.ts             # 인증 상태 (Zustand)
-│   └── ranking.store.ts          # 실시간 랭킹 상태 (Zustand)
-├── hooks/                        # TanStack Query 커스텀 훅
+│   ├── auth/AuthGate.tsx
+│   ├── common/Providers.tsx
+│   ├── home/                       # 공개 홈 섹션
+│   ├── layout/Header.tsx
+│   ├── layout/HomeHeader.tsx
+│   ├── persona/PersonaCard.tsx
+│   ├── ranking/RankingRow.tsx
+│   ├── submission/FeedbackCard.tsx
+│   └── ui/                         # shadcn/base-ui 계열 primitives
 ├── lib/
-│   ├── api.ts                    # axios 인스턴스 + 토큰 자동 갱신 인터셉터
-│   └── utils.ts                  # cn() 등 유틸
-└── proxy.ts                      # Next.js 미들웨어 (/admin 라우트 edge 보호)
+│   ├── api.ts                      # axios client + refresh retry + API base 결정
+│   ├── musicGenres.ts              # frontend 장르 taxonomy
+│   ├── queryKeys.ts
+│   └── mocks/
+├── stores/
+│   ├── auth.store.ts
+│   └── ranking.store.ts
+├── types/api.ts
+└── proxy.ts                        # admin edge 보호 + auth page redirect
 ```
 
 ---
 
-## 사이드바 네비게이션 구조
+## API 클라이언트
 
-```
-Workspace 그룹: Dashboard / AI Studio / Creator Studio
-Network 그룹:   Contest / Distribution / Explore
-Library 그룹:   내 제출 / 랭킹
+`src/lib/api.ts`는 배포 환경에 따라 baseURL을 결정한다.
 
-하단 sticky: 크레딧 블록 + 유저 아바타
+| 환경 | baseURL |
+|---|---|
+| 브라우저 localhost + `NEXT_PUBLIC_API_URL` 있음 | 해당 값 (`http://localhost:8000/api/v1`) |
+| Vercel production/preview | `/api/v1` same-origin |
+| SSR/Node | `NEXT_PUBLIC_API_URL` 또는 `http://localhost:8000/api/v1` |
+
+배포 환경에서 `/api/v1/*`는 `next.config.ts` rewrites로 `API_PROXY_TARGET` 또는 기본 API Gateway에 전달한다.
+
+```ts
+rewrites: /api/v1/:path* -> ${API_PROXY_TARGET}/api/v1/:path*
 ```
+
+Access Token은 메모리/sessionStorage에 보관하고, Refresh Token은 백엔드가 HttpOnly Cookie로 설정한다. 401 발생 시 `/auth/refresh`를 호출해 access token을 갱신하고 원 요청을 재시도한다.
 
 ---
 
-## 클라이언트 컴포넌트 기준
+## 인증/라우트 보호
 
-`"use client"` 필요한 경우: 상태/이벤트/브라우저 API 사용 시.
-
-| 컴포넌트 | 타입 | 이유 |
-|---|---|---|
-| 대시보드 페이지들 | Client | Zustand store 접근, 인터랙션 |
-| `Sidebar`, `Header` | Client | pathname, auth store |
-| `AuthGate` | Client | 인증 상태 확인 + 리다이렉트 |
-| `SubmissionForm` | Client | 파일 업로드, 폼 상태 |
-| `ScoreBar` | Client | 애니메이션 |
+- `/rankings`, `/explore`는 공개 접근 가능.
+- 일반 대시보드 경로는 `AuthGate`가 클라이언트에서 세션 복원 후 미로그인 사용자를 `/login?redirect=...`로 보낸다.
+- `/admin`은 `proxy.ts`에서 refresh cookie가 없으면 edge 단계에서 `/login`으로 보낸다. role 기반 세부 제어는 앱 화면에서 보강한다.
+- 로그인/가입 성공 시 `/users/me`로 사용자 정보를 가져와 Zustand store에 저장한다.
 
 ---
 
-## Zustand 스토어
+## 주요 화면 상태
 
-### `auth.store.ts`
-```
-state:
-  user: User | null       # 닉네임, credit_balance 등 포함
-  isLoading: boolean
-
-actions:
-  setUser(user)
-  logout()
-```
-
-- `access_token`: sessionStorage 저장 (탭 닫으면 소멸, hard reload 생존)
-- `refresh_token`: HttpOnly 쿠키 (axios 인터셉터가 자동 갱신)
-
-### `ranking.store.ts`
-```
-state:
-  entries: RankingEntry[]
-  myEntry: RankingEntry | null
-  lastUpdated: Date | null
-
-actions:
-  updateEntry(entry)
-  setMyEntry(entry)
-```
-
----
-
-## API 클라이언트 (`lib/api.ts`)
-
-axios 인스턴스. 토큰 자동 첨부 + 401 시 자동 갱신.
-
-```
-- baseURL: NEXT_PUBLIC_API_URL
-- 요청 인터셉터: Authorization: Bearer {sessionStorage.accessToken}
-- 응답 인터셉터: 401 → POST /auth/refresh → 성공 시 재요청 → 실패 시 로그아웃
-```
-
----
-
-## 라우트 보호
-
-`proxy.ts` (Next.js 미들웨어): `/admin` 라우트만 edge 보호.
-일반 대시보드 보호: `AuthGate` 컴포넌트가 처리 (클라이언트 사이드).
-
-```
-/admin/** → 미로그인 또는 role != admin → 403
-/(dashboard)/** → AuthGate → 미로그인 시 /login 리디렉션
-```
+| 화면 | 현재 역할 |
+|---|---|
+| `/` | 공개 홈. 최신 제출곡/차트/경연 CTA 노출 |
+| `/login`, `/register` | 이메일 인증. 소셜 버튼은 준비중 |
+| `/submit` | 업로드 presign, 장르 taxonomy 선택, 페르소나 선택, 제출 |
+| `/submissions/[id]` | 제출 상태 폴링, 운영 플래그, 점수, 텍스트/음성 피드백 상태 |
+| `/rankings` | 주간 랭킹, 공식 장르 필터, 내 순위 표시 |
+| `/ai-studio` | 가사 생성, 데모 구성안, 마스터링 요청, 생성 히스토리 |
+| `/admin` | 운영 현황 초안 |
 
 ---
 
 ## Mock 전략
 
-`NEXT_PUBLIC_USE_MOCK=true` 환경변수로 토글.
-실 API 없이 개발 가능. 백엔드 완성 후 false로 전환.
+`NEXT_PUBLIC_USE_MOCK=true`이면 `lib/mocks/handlers.ts`를 사용한다. Mock 데이터도 공식 장르 코드와 AI assets 응답 구조를 따른다.
 
 ---
 
-## 환경변수 (`.env.local`)
+## 환경변수
 
-```
-NEXT_PUBLIC_API_URL=http://localhost:8000/api/v1
+`frontend/.env.example` 기준.
+
+```text
+NEXT_PUBLIC_API_URL=http://localhost:8000/api/v1   # 로컬 브라우저용
 NEXT_PUBLIC_USE_MOCK=false
+API_PROXY_TARGET=https://ity0jkac22.execute-api.ap-northeast-2.amazonaws.com
+NEXT_PUBLIC_SENTRY_DSN=
+SENTRY_AUTH_TOKEN=
 ```
+
+Vercel production은 `NEXT_PUBLIC_API_URL`이 없어도 `/api/v1` same-origin rewrite로 동작한다. Preview가 Vercel Authentication으로 보호될 수 있으므로 외부 공유는 production alias를 사용한다.
 
 ---
 
-## 에러 / 로딩 / 빈 상태 처리
+## 검증 명령
 
-| 상태 | 처리 방법 |
-|---|---|
-| 로딩 | `<Skeleton>` (shadcn/ui) |
-| 에러 | `error.tsx` (Next.js) + 재시도 버튼 |
-| 빈 상태 | Empty State (아이콘 + 안내 + CTA) |
+```bash
+cd frontend
+npm run lint
+npm run test
+npm run build
+npx vercel deploy --prod --yes
+```
 
-TanStack Query `isLoading`, `isError`, `data` 상태로 분기.
+배포 후 확인:
+
+```bash
+curl -I https://frontend-eta-eosin.vercel.app
+curl -I https://frontend-eta-eosin.vercel.app/login
+curl -i -X POST https://frontend-eta-eosin.vercel.app/api/v1/auth/register   -H 'Content-Type: application/json'   -d '{"email":"bad","password":"short","nickname":"x"}'
+```
+
+마지막 요청은 백엔드 validation 422가 반환되면 rewrite가 정상이다.

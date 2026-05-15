@@ -1,85 +1,110 @@
 # 07. Security Checklist
 
-MVP 단계 기준. 각 항목은 구현 완료 시 체크.
+2026-05-15 구현 기준. 체크 표기는 현재 코드/배포에서 확인된 상태를 반영한다.
 
 ---
 
 ## 전송 계층
 
-- [ ] **HTTPS 강제** — Vercel(프론트), API Gateway(백엔드) 자동 적용. HTTP → HTTPS 리디렉션 확인
-- [ ] **HSTS** — `Strict-Transport-Security: max-age=31536000` 헤더 (Vercel 기본 설정 확인)
+- [x] HTTPS 강제: Vercel production, API Gateway 모두 HTTPS 사용
+- [x] HSTS: `next.config.ts`에서 `Strict-Transport-Security: max-age=63072000; includeSubDomains; preload`
+- [x] 기본 보안 헤더: `X-Frame-Options`, `X-Content-Type-Options`, `Referrer-Policy`, `Permissions-Policy`
+- [~] CSP: 현재 `script-src 'unsafe-inline' 'unsafe-eval'` 허용. Next/Turbopack 동작을 위해 남아 있으며 hardening 필요
 
 ---
 
 ## 인증 / 세션
 
-- [ ] **JWT 만료 시간 설정** — Access Token 60분, Refresh Token 7일
-- [ ] **Refresh Token HttpOnly Cookie 저장** — `Secure; SameSite=Strict` 속성 필수
-- [ ] **Access Token 메모리 저장** — localStorage/sessionStorage 금지
-- [ ] **Refresh Token 블랙리스트** — 로그아웃 시 서버 측 무효화 (Redis TTL 활용)
-- [ ] **비밀번호 해시** — bcrypt, cost factor 12 이상
-- [ ] **브루트포스 방지** — 로그인 실패 5회 → 15분 잠금 (Redis 카운터)
+- [x] Access Token 60분, Refresh Token 7일 설정
+- [x] Refresh Token HttpOnly Cookie 저장
+- [x] Production Cookie `Secure` 적용 (`ENVIRONMENT != development`)
+- [~] SameSite: 현재 `lax`. 프론트 same-origin `/api/v1` rewrite에서는 정상. 더 강한 `strict`는 OAuth/리다이렉트 UX 검토 후 적용
+- [x] Refresh Token DB 저장 및 JTI claim/revoke
+- [x] 로그아웃 시 refresh token revoke + cookie delete
+- [x] 비밀번호 bcrypt 해시
+- [~] Access Token은 메모리 + sessionStorage. 요구 보안 수준을 높이면 sessionStorage 제거 검토
+- [~] 인증 rate-limit: Lambda 인스턴스 메모리 기반. 분산 rate-limit는 Redis/API Gateway/WAF 필요
 
 ---
 
 ## API 보호
 
-- [ ] **CORS 화이트리스트** — `CORS_ORIGINS` 환경변수. `*` 금지
-- [ ] **Rate Limiting** — API Gateway 레벨: 전체 1000 req/min, 인증 엔드포인트 10 req/min
-- [ ] **Input 크기 제한** — FastAPI `max_body_size` 설정 (음원 제외 JSON: 1MB)
-- [ ] **SQL Injection 방어** — SQLModel ORM 파라미터 바인딩 자동 처리. Raw SQL 금지
-- [ ] **Path Traversal 방지** — 파일 경로 파라미터 화이트리스트 검증
-
----
-
-## 프론트엔드
-
-- [ ] **XSS 방어** — React JSX 자동 이스케이프. `dangerouslySetInnerHTML` 사용 금지
-- [ ] **CSRF 방어** — Next.js Server Actions 자동 처리. API 직접 호출 시 `SameSite=Strict` Cookie 의존
-- [ ] **Content Security Policy** — `next.config.js`에서 CSP 헤더 정의 (인라인 스크립트 제한)
-- [ ] **민감 정보 로그 출력 금지** — 비밀번호, 토큰, 개인정보 `console.log` 제거
+- [x] CORS whitelist: `CORS_ORIGINS` 기반. Production backend 직접 호출 origin은 명시 등록 필요
+- [x] Frontend production same-origin proxy: `/api/v1/*` → API Gateway rewrite로 브라우저 CORS 노출 감소
+- [x] SQLModel ORM 사용. Raw SQL 없음
+- [x] Upload ownership check: `audio/{user_id}/...` prefix 검증
+- [x] Submission duplicate audio_url 방지
+- [x] Daily submission limit 적용
+- [~] Redis abuse counter: `REDIS_URL` 설정 시 user/ip/device/audio 기준 평가. 미설정 시 skip
+- [ ] API Gateway/WAF 레벨 global rate-limit 정책 확정
 
 ---
 
 ## 파일 업로드
 
-- [ ] **파일 타입 검증** — Content-Type + 매직 바이트 모두 검사 (`audio/wav`, `audio/flac`만 허용)
-- [ ] **파일 크기 제한** — 200MB. Presigned URL 생성 시 서버 측 검증 포함
-- [ ] **S3 버킷 퍼블릭 접근 차단** — 버킷 자체는 Private. CloudFront or Presigned URL로만 제공
-- [ ] **파일명 무작위화** — 원본 파일명 사용 금지. UUID + 확장자로 저장
+- [x] Presigned URL 발급 시 content-type allowlist 적용
+- [x] Presigned URL 발급 시 50MB 크기 제한
+- [x] S3 key는 `audio/{user_id}/{uuid}.{ext}` 형태
+- [x] `/uploads/verify`에서 S3 HEAD로 소유권/크기/타입 검증
+- [~] 매직 바이트 검사는 별도 미구현. 필요 시 validation pipeline에 추가
+- [~] S3 public object URL을 반환. 운영 접근 정책/CloudFront 전환 여부 검토 필요
 
 ---
 
-## 데이터 보호
+## 콘텐츠 안전 / AI
 
-- [ ] **환경변수 코드 하드코딩 금지** — `settings.py` (pydantic-settings) 경유만 허용. `.env` 파일 `.gitignore` 등록
-- [ ] **민감 데이터 마스킹** — 에러 응답에 DB 스키마, 스택 트레이스 노출 금지 (prod 환경)
-- [ ] **개인정보 최소 수집** — 서비스에 불필요한 필드 수집 금지
-- [ ] **음원 데이터 AI 학습 동의** — 제출 약관에 AI 학습 활용 범위 명시 + 동의 체크박스 분리
-
----
-
-## 인프라
-
-- [ ] **IAM 최소 권한** — Lambda 실행 역할은 S3(특정 버킷), RDS, CloudWatch 권한만 부여
-- [ ] **DB 접근 제한** — RDS는 Lambda VPC 내부에서만 접근. 퍼블릭 엔드포인트 비활성화
-- [ ] **Secrets 관리** — 환경변수는 Vercel Dashboard / AWS Systems Manager Parameter Store에 저장. 코드 외부
-- [ ] **감사 로그** — 어드민 작업(상태 변경, 페르소나 수정)은 별도 로그 기록
+- [x] 제출 validation/moderation 서비스 레이어 분리
+- [x] AI 가사 생성 전 unsafe prompt keyword blocklist 적용
+- [x] OpenAI 응답 품질검사: 길이, 섹션 라벨, URL 포함 여부 등
+- [x] AI compose blueprint 품질검사 + fallback
+- [x] OpenAI 미설정 또는 오류 시 fallback 결과 저장, provider error는 asset에 기록
+- [~] ACRCloud/저작권/AI 생성 탐지 env와 확장 포인트 존재. 운영 provider 설정 필요
 
 ---
 
-## 콘텐츠 안전
+## 프론트엔드
 
-- [ ] **표절 검증** — 제출 1차 게이트에서 Audio Fingerprint 검사
-- [ ] **AI 생성 콘텐츠 탐지** — MVP에서는 서명 기반 탐지 적용 (정확도 낮음 — 추후 개선)
-- [ ] **저작권 침해 필터** — 등록된 저작권 음원 DB 대조 (초기: Chromaprint 로컬 DB)
-- [ ] **부적절 가사 필터** — 욕설/혐오 키워드 필터 (한국어 기준)
+- [x] React JSX 기본 escaping 사용
+- [x] 민감 token은 UI에 출력하지 않음
+- [x] Vercel preview는 인증 보호 가능, 외부 공유는 production alias 사용
+- [~] Sentry DSN/SENTRY_AUTH_TOKEN은 env로만 관리. source map 업로드 정책 별도 결정
+- [ ] 브라우저 자동 E2E 검증 도구 구성
 
 ---
 
-## 미결 / Phase 2 이후
+## 환경변수 / Secrets
 
-- 음성 데이터 비식별화 (대규모 학습 데이터 활용 시)
-- GDPR/개인정보보호법 준거 검토 (해외 서비스 확장 시)
-- AWS WAF 도입 (DDoS 대응)
-- 침투 테스트 (운영 전환 전)
+- [x] `.env`, `.env.production`, `.env.local` gitignore 등록
+- [x] `backend/.env.example`, `frontend/.env.example` 최신 키 반영
+- [x] Production `JWT_SECRET` 기본값 사용 시 backend startup fail
+- [~] 로컬 `backend/.env.production`에는 실제 운영값이 있으므로 외부 공유 금지. 가능하면 Vercel/AWS env로 이전 후 rotation 권장
+- [ ] AWS Secrets Manager/SSM Parameter Store 정식 도입
+- [ ] 운영 Redis URL 및 OpenAI key rotation 정책 문서화
+
+---
+
+## 인프라 / 운영
+
+- [x] Frontend production 배포: `https://frontend-eta-eosin.vercel.app`
+- [x] Frontend API rewrite: `/api/v1/*` same-origin proxy
+- [x] Backend Lambda handler: API Gateway + custom event(scoring/feedback_tts/mastering)
+- [~] IAM 최소 권한은 배포 계정에서 확인 필요
+- [~] RDS network policy/VPC 접근 제한 확인 필요
+- [ ] CloudWatch/Sentry alerting 기준 정의
+- [ ] Admin action audit log 구현
+
+---
+
+## Release Gate
+
+Production 배포 전 최소 확인:
+
+```bash
+cd backend && ./venv/bin/pytest
+cd frontend && npm run lint && npm run test && npm run build
+curl -I https://frontend-eta-eosin.vercel.app
+curl -I https://frontend-eta-eosin.vercel.app/login
+curl -i -X POST https://frontend-eta-eosin.vercel.app/api/v1/auth/register   -H 'Content-Type: application/json'   -d '{"email":"bad","password":"short","nickname":"x"}'
+```
+
+마지막 요청이 backend 422 validation을 반환하면 production rewrite가 정상이다.
