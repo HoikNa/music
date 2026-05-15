@@ -21,6 +21,9 @@ class AbuseDecision:
 def _redis():
     from redis import Redis
 
+    if not settings.redis_url:
+        return None
+
     try:
         return Redis.from_url(
             settings.redis_url,

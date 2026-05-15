@@ -12,6 +12,7 @@ from sqlmodel import Session, select
 from app.dependencies.auth import get_current_user
 from app.dependencies.db import get_db
 from app.helpers.db import fetch_by_id
+from app.constants.genres import MUSIC_GENRE_GROUPS, MUSIC_GENRES, genre_label, normalize_genre
 from app.models.submission import Submission, SubmissionPersona, SubmissionStatus, RankingMode
 from app.models.score import BaseScore, PersonaScore, Feedback
 from app.models.persona import Persona
@@ -44,6 +45,14 @@ class SubmissionCreate(BaseModel):
         if not v or len(v) > 100:
             raise ValueError("title must be 1–100 characters")
         return v
+
+    @field_validator("genre")
+    @classmethod
+    def validate_genre(cls, v: str) -> str:
+        try:
+            return normalize_genre(v)
+        except ValueError as exc:
+            raise ValueError("genre must be one of the official Vertual Owl music genres") from exc
 
     @field_validator("lyrics")
     @classmethod
@@ -92,6 +101,9 @@ def _serialize_submission(submission: Submission, db: Session) -> dict:
                     "improvements": feedback.improvements,
                     "audio_url": feedback.audio_url,
                     "audio_status": feedback.audio_status,
+                    "audio_model": feedback.audio_model,
+                    "audio_error": feedback.audio_error,
+                    "audio_generated_at": feedback.audio_generated_at.isoformat() if feedback.audio_generated_at else None,
                 } if feedback else None,
             })
 
@@ -100,6 +112,7 @@ def _serialize_submission(submission: Submission, db: Session) -> dict:
         "submission_id": str(submission.id),
         "title": submission.title,
         "genre": submission.genre,
+        "genre_label": genre_label(submission.genre),
         "audio_url": submission.audio_url,
         "duration_sec": submission.duration_sec,
         "status": submission.status,
@@ -146,6 +159,14 @@ def _enqueue_scoring(
         return
 
     background_tasks.add_task(run_scoring, submission_id)
+
+
+@router.get("/genres")
+def list_music_genres():
+    return {
+        "groups": MUSIC_GENRE_GROUPS,
+        "items": MUSIC_GENRES,
+    }
 
 
 @router.post("", status_code=201)

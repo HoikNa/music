@@ -23,6 +23,7 @@ class Settings(BaseSettings):
     feedback_tts_voice: str = "alloy"
     feedback_tts_enabled: bool = True
     lyrics_model: str = "gpt-4.1-mini"
+    composition_model: str = "gpt-4.1-mini"
     moderation_model: str = "omni-moderation-latest"
     music_generation_provider: str = "mock"
     mubert_api_key: str | None = None

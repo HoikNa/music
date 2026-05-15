@@ -1,6 +1,25 @@
 import json
+import logging
+from dataclasses import dataclass
+from typing import Any
 
 from app.config import settings
+
+logger = logging.getLogger(__name__)
+
+MIN_LYRICS_CHARS = 80
+MAX_LYRICS_CHARS = 5000
+MIN_LYRICS_LINES = 6
+REQUIRED_SECTION_LABELS = ("[Verse", "[Chorus")
+
+
+@dataclass(frozen=True)
+class LyricsResult:
+    lyrics: str
+    provider: str
+    model: str
+    fallback_reason: str | None = None
+    error_message: str | None = None
 
 
 def _fallback_lyrics(theme: str, genre: str, mood: str) -> str:
@@ -23,19 +42,79 @@ def _fallback_lyrics(theme: str, genre: str, mood: str) -> str:
     ])
 
 
+def _fallback_result(
+    theme: str,
+    genre: str,
+    mood: str,
+    reason: str,
+    error_message: str | None = None,
+) -> LyricsResult:
+    return LyricsResult(
+        lyrics=_fallback_lyrics(theme, genre, mood),
+        provider="fallback",
+        model="rule-v1",
+        fallback_reason=reason,
+        error_message=error_message,
+    )
+
+
+def _create_openai_client(api_key: str):
+    from openai import OpenAI
+
+    return OpenAI(api_key=api_key)
+
+
+def _parse_lyrics_response(raw: str) -> str:
+    data = json.loads(raw)
+    if not isinstance(data, dict):
+        raise ValueError("OpenAI response must be a JSON object")
+    lyrics = data.get("lyrics")
+    if not isinstance(lyrics, str):
+        raise ValueError("OpenAI response missing string lyrics")
+    return lyrics.strip()
+
+
+def _quality_issue(lyrics: str) -> str | None:
+    if len(lyrics) < MIN_LYRICS_CHARS:
+        return "Generated lyrics are too short"
+    if len(lyrics) > MAX_LYRICS_CHARS:
+        return "Generated lyrics are too long"
+    non_empty_lines = [line for line in lyrics.splitlines() if line.strip()]
+    if len(non_empty_lines) < MIN_LYRICS_LINES:
+        return "Generated lyrics do not have enough lines"
+    if not all(label in lyrics for label in REQUIRED_SECTION_LABELS):
+        return "Generated lyrics missing required section labels"
+    if "http://" in lyrics or "https://" in lyrics:
+        return "Generated lyrics include a URL"
+    return None
+
+
+def _build_generation_metadata(theme: str, genre: str, mood: str, keywords: list[str] | None) -> dict[str, Any]:
+    return {
+        "theme": theme,
+        "genre": genre,
+        "mood": mood,
+        "keywords": keywords or [],
+        "quality_rules": {
+            "min_chars": MIN_LYRICS_CHARS,
+            "max_chars": MAX_LYRICS_CHARS,
+            "min_lines": MIN_LYRICS_LINES,
+            "required_section_labels": list(REQUIRED_SECTION_LABELS),
+        },
+    }
+
+
 def generate_lyrics(
     theme: str,
     genre: str,
     mood: str,
     keywords: list[str] | None = None,
-) -> tuple[str, str, str]:
+) -> LyricsResult:
     if not settings.openai_api_key:
-        return _fallback_lyrics(theme, genre, mood), "fallback", "rule-v1"
+        return _fallback_result(theme, genre, mood, "OPENAI_API_KEY is not configured")
 
     try:
-        from openai import OpenAI
-
-        client = OpenAI(api_key=settings.openai_api_key)
+        client = _create_openai_client(settings.openai_api_key)
         keyword_text = ", ".join(keywords or [])
         response = client.responses.create(
             model=settings.lyrics_model,
@@ -43,8 +122,9 @@ def generate_lyrics(
                 {
                     "role": "system",
                     "content": (
-                        "You write Korean K-POP demo lyrics. Keep syllable rhythm singable, "
-                        "use clear section labels, and return JSON only."
+                        "You write original Korean K-POP demo lyrics. Keep syllable rhythm singable, "
+                        "use clear section labels, avoid copyrighted lyric imitation, avoid unsafe sexual or violent content, "
+                        "and return JSON only. Include at least [Verse 1] and [Chorus]."
                     ),
                 },
                 {
@@ -52,17 +132,24 @@ def generate_lyrics(
                     "content": (
                         f"Theme: {theme}\nGenre: {genre}\nMood: {mood}\n"
                         f"Keywords: {keyword_text}\n"
-                        "Return {\"lyrics\":\"...\"} with Korean lyrics."
+                        "Return {\"lyrics\":\"...\"} with original Korean lyrics."
                     ),
                 },
             ],
             text={"format": {"type": "json_object"}},
+            metadata=_build_generation_metadata(theme, genre, mood, keywords),
         )
-        data = json.loads(response.output_text)
-        lyrics = str(data.get("lyrics", "")).strip()
-        if lyrics:
-            return lyrics, "openai", settings.lyrics_model
-    except Exception:
-        pass
-
-    return _fallback_lyrics(theme, genre, mood), "fallback", "rule-v1"
+        lyrics = _parse_lyrics_response(response.output_text)
+        issue = _quality_issue(lyrics)
+        if issue:
+            return _fallback_result(theme, genre, mood, issue)
+        return LyricsResult(lyrics=lyrics, provider="openai", model=settings.lyrics_model)
+    except Exception as exc:
+        logger.exception("OpenAI lyrics generation failed")
+        return _fallback_result(
+            theme,
+            genre,
+            mood,
+            "OpenAI lyrics generation failed",
+            str(exc)[:500],
+        )

@@ -116,4 +116,8 @@ def handler(event, context):
         from app.services.feedback_tts_service import run_feedback_tts
         run_feedback_tts(uuid.UUID(event["feedback_id"]))
         return {"ok": True}
+    if event.get("source") == "vertualowl.mastering":
+        from app.routers.ai import run_mastering
+        run_mastering(uuid.UUID(event["asset_id"]))
+        return {"ok": True}
     return _get_asgi_handler()(event, context)

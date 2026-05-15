@@ -12,7 +12,7 @@ PERSONAS = [
     {
         "name": "bum_su",
         "display_name": "김범수",
-        "genre": "ballad",
+        "genre": "VOVATAR_POP_BALLARD",
         "description": "한국 최고의 발라드 가수. 음정과 감성 표현을 최우선시합니다.",
         "sort_order": 1,
         "weights": [
@@ -26,7 +26,7 @@ PERSONAS = [
     {
         "name": "iu",
         "display_name": "아이유",
-        "genre": "pop",
+        "genre": "VOVATAR_POP",
         "description": "국민 가수. 섬세한 감정 표현과 균형 잡힌 실력을 중시합니다.",
         "sort_order": 2,
         "weights": [
@@ -40,7 +40,7 @@ PERSONAS = [
     {
         "name": "taeyang",
         "display_name": "태양",
-        "genre": "rnb",
+        "genre": "VOVATAR_RNB_SOUL",
         "description": "R&B/소울의 거장. 리듬감과 다이나믹을 극도로 중시합니다.",
         "sort_order": 3,
         "weights": [
@@ -54,7 +54,7 @@ PERSONAS = [
     {
         "name": "sunmi",
         "display_name": "선미",
-        "genre": "dance",
+        "genre": "VOVATAR_POP",
         "description": "댄스 팝의 아이콘. 퍼포먼스와 리듬 정확성을 봅니다.",
         "sort_order": 4,
         "weights": [

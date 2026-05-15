@@ -1,9 +1,10 @@
 import uuid
-from fastapi import APIRouter, Depends, Query
+from fastapi import APIRouter, Depends, HTTPException, Query, status
 from sqlmodel import Session, select
 
 from app.dependencies.auth import get_current_user_optional
 from app.dependencies.db import get_db
+from app.constants.genres import genre_label, normalize_genre
 from app.helpers.db import fetch_by_id
 from app.models.ranking import RankingPeriod, RankingEntry, PeriodStatus, PeriodType
 from app.models.submission import Submission
@@ -22,6 +23,8 @@ def _serialize_entry(entry: RankingEntry, db: Session) -> dict:
         "profile_image_url": user.profile_image_url if user else None,
         "submission_id": str(entry.submission_id),
         "title": submission.title if submission else "",
+        "genre": submission.genre if submission else None,
+        "genre_label": genre_label(submission.genre) if submission else None,
         "score": entry.persona_score,
         "rank_change": (entry.previous_rank - entry.rank) if entry.previous_rank else 0,
     }
@@ -30,9 +33,17 @@ def _serialize_entry(entry: RankingEntry, db: Session) -> dict:
 @router.get("/weekly")
 def get_weekly_ranking(
     persona_id: uuid.UUID | None = Query(default=None),
+    genre: str | None = Query(default=None),
     db: Session = Depends(get_db),
     current_user: User | None = Depends(get_current_user_optional),
 ):
+    try:
+        genre_code = normalize_genre(genre) if genre else None
+    except ValueError as exc:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="genre must be one of the official Vertual Owl music genres",
+        ) from exc
     stmt = (
         select(RankingPeriod)
         .where(
@@ -53,23 +64,30 @@ def get_weekly_ranking(
             "my_entry": None,
         }
 
-    entries = db.exec(
+    entries_stmt = (
         select(RankingEntry)
         .where(RankingEntry.period_id == period.id)
         .order_by(RankingEntry.rank)
-        .limit(100)
-    ).all()
+    )
+    if genre_code:
+        entries_stmt = entries_stmt.join(Submission, RankingEntry.submission_id == Submission.id).where(
+            Submission.genre == genre_code
+        )
+    entries = db.exec(entries_stmt.limit(100)).all()
 
     serialized = [_serialize_entry(e, db) for e in entries]
 
     my_entry = None
     if current_user:
-        my_row = db.exec(
-            select(RankingEntry).where(
-                RankingEntry.period_id == period.id,
-                RankingEntry.user_id == current_user.id,
+        my_stmt = select(RankingEntry).where(
+            RankingEntry.period_id == period.id,
+            RankingEntry.user_id == current_user.id,
+        )
+        if genre_code:
+            my_stmt = my_stmt.join(Submission, RankingEntry.submission_id == Submission.id).where(
+                Submission.genre == genre_code
             )
-        ).first()
+        my_row = db.exec(my_stmt).first()
         if my_row:
             my_entry = _serialize_entry(my_row, db)
 
