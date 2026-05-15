@@ -136,7 +136,7 @@ def _format_openai_plan(data: dict[str, Any]) -> str:
     mix_notes = data.get("mix_notes") or []
 
     lines = [
-        f"## 요약",
+        "## 요약",
         f"- 제목: {title}",
         f"- 콘셉트: {summary}",
         f"- 권장 템포/키: {tempo_bpm} BPM, {key}",
