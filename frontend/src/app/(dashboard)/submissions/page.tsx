@@ -2,13 +2,14 @@
 
 import { useQuery } from "@tanstack/react-query"
 import Link from "next/link"
-import { FileAudio, Plus } from "lucide-react"
+import { AlertTriangle, FileAudio, Plus, ShieldCheck } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { Badge } from "@/components/ui/badge"
 import { Skeleton } from "@/components/ui/skeleton"
 import { StatusStep } from "@/components/submission/StatusStep"
 import { queryKeys } from "@/lib/queryKeys"
 import { api } from "@/lib/api"
+import { musicGenreLabel } from "@/lib/musicGenres"
 import type { Submission, PagedResponse } from "@/types/api"
 
 const STATUS_LABELS: Record<string, { label: string; color: string }> = {
@@ -17,6 +18,14 @@ const STATUS_LABELS: Record<string, { label: string; color: string }> = {
   scoring: { label: "채점중", color: "var(--warning)" },
   scored: { label: "완료", color: "var(--success)" },
   rejected: { label: "반려", color: "var(--error)" },
+}
+
+function riskPercent(value?: number) {
+  return Math.round((value ?? 0) * 100)
+}
+
+function hasRiskSignal(submission: Submission) {
+  return Boolean(submission.is_ranking_excluded || (submission.abuse_risk_score ?? 0) >= 0.5)
 }
 
 export default function SubmissionsPage() {
@@ -75,7 +84,19 @@ export default function SubmissionsPage() {
                     <div className="min-w-0">
                       <div className="flex items-center gap-2 flex-wrap">
                         <p className="font-semibold truncate">{sub.title}</p>
-                        <Badge variant="secondary" className="text-xs">{sub.genre}</Badge>
+                        <Badge variant="secondary" className="text-xs">{sub.genre_label ?? musicGenreLabel(sub.genre)}</Badge>
+                        {sub.is_ranking_excluded && (
+                          <span className="inline-flex h-6 items-center gap-1 rounded border border-[var(--error)] px-2 text-[11px] font-medium text-[var(--error)]">
+                            <AlertTriangle className="size-3" />
+                            랭킹 제외
+                          </span>
+                        )}
+                        {!sub.is_ranking_excluded && hasRiskSignal(sub) && (
+                          <span className="inline-flex h-6 items-center gap-1 rounded border border-[var(--warning)] px-2 text-[11px] font-medium text-[var(--warning)]">
+                            <ShieldCheck className="size-3" />
+                            리스크 {riskPercent(sub.abuse_risk_score)}%
+                          </span>
+                        )}
                       </div>
                       <p className="text-xs text-[var(--text-muted)] mt-1">
                         {new Date(sub.created_at).toLocaleDateString("ko-KR")}

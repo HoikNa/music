@@ -10,10 +10,9 @@ import { toast } from "sonner"
 import { PersonaCard } from "@/components/persona/PersonaCard"
 import { queryKeys } from "@/lib/queryKeys"
 import { api } from "@/lib/api"
+import { MUSIC_GENRE_GROUPS, musicGenreLabel } from "@/lib/musicGenres"
 import type { Persona } from "@/types/api"
 import { cn } from "@/lib/utils"
-
-const GENRES = ["발라드", "팝", "R&B", "힙합", "록", "트로트", "인디", "기타"]
 
 const STEPS = ["파일 업로드", "곡 정보", "페르소나 선택", "확인 및 제출"]
 
@@ -102,7 +101,7 @@ export default function SubmitPage() {
               <div key={n} className="flex items-center gap-2 flex-1 min-w-0">
                 <div className={cn(
                   "size-6 rounded-full flex items-center justify-center text-[11px] font-bold shrink-0 transition-colors",
-                  done ? "bg-[var(--green)] text-white" : active ? "bg-[var(--green)] text-white" : "bg-white border border-[var(--line)] text-[var(--ink-3)]"
+                  done ? "bg-[var(--green)] text-white" : active ? "bg-[var(--green)] text-white" : "bg-[var(--card)] border border-[var(--line)] text-[var(--ink-3)]"
                 )}>
                   {done ? <CheckCircle2 className="size-3.5" /> : n}
                 </div>
@@ -120,7 +119,7 @@ export default function SubmitPage() {
 
       {/* Step 1: 파일 업로드 */}
       {step === 1 && (
-        <div className="border border-dashed border-[var(--line)] rounded bg-white p-8 text-center space-y-4">
+        <div className="border border-dashed border-[var(--line)] rounded bg-[var(--card)] p-8 text-center space-y-4">
           <div className="mx-auto size-12 rounded-full bg-[var(--green-bg)] flex items-center justify-center">
             <FileAudio className="size-6 text-[var(--green-d)]" />
           </div>
@@ -149,7 +148,7 @@ export default function SubmitPage() {
 
       {/* Step 2: 곡 정보 */}
       {step === 2 && (
-        <div className="border border-[var(--line)] rounded bg-white divide-y divide-[var(--line)]">
+        <div className="border border-[var(--line)] rounded bg-[var(--card)] divide-y divide-[var(--line)]">
           <div className="p-5 space-y-1.5">
             <label className="text-[13px] font-semibold text-[var(--ink-0)]">곡 제목 *</label>
             <Input placeholder="예: 봄날의 그대에게" value={title}
@@ -158,18 +157,28 @@ export default function SubmitPage() {
           </div>
           <div className="p-5 space-y-2">
             <label className="text-[13px] font-semibold text-[var(--ink-0)]">장르 *</label>
-            <div className="flex flex-wrap gap-1.5">
-              {GENRES.map((g) => (
-                <button key={g} type="button" onClick={() => setGenre(g)}
-                  className={cn(
-                    "rounded border px-3 py-1 text-[12px] font-medium transition-colors",
-                    genre === g
-                      ? "border-[var(--green)] bg-[var(--green-bg)] text-[var(--green-d)]"
-                      : "border-[var(--line)] text-[var(--ink-2)] hover:border-[var(--ink-2)]"
-                  )}>
-                  {g}
-                </button>
-              ))}
+            <div className="space-y-2">
+              {MUSIC_GENRE_GROUPS.map((group) => {
+                const options = group.children.length > 0 ? group.children : [{ code: group.code, label: group.label }]
+                return (
+                  <div key={group.code} className="rounded border border-[var(--line)] bg-[var(--tint)] p-2">
+                    <div className="mb-1.5 text-[11px] font-bold text-[var(--ink-3)]">{group.label}</div>
+                    <div className="flex flex-wrap gap-1.5">
+                      {options.map((g) => (
+                        <button key={g.code} type="button" onClick={() => setGenre(g.code)}
+                          className={cn(
+                            "rounded border px-3 py-1 text-[12px] font-medium transition-colors",
+                            genre === g.code
+                              ? "border-[var(--green)] bg-[var(--green-bg)] text-[var(--green-d)]"
+                              : "border-[var(--line)] bg-[var(--card)] text-[var(--ink-2)] hover:border-[var(--ink-2)]"
+                          )}>
+                          {g.label}
+                        </button>
+                      ))}
+                    </div>
+                  </div>
+                )
+              })}
             </div>
           </div>
           <div className="p-5 space-y-2">
@@ -185,7 +194,7 @@ export default function SubmitPage() {
                     "rounded border p-3 text-left transition-colors",
                     rankingMode === value
                       ? "border-[var(--green)] bg-[var(--green-bg)]"
-                      : "border-[var(--line)] hover:border-[var(--ink-2)] bg-white"
+                      : "border-[var(--line)] hover:border-[var(--ink-2)] bg-[var(--card)]"
                   )}>
                   <p className={cn("text-[13px] font-semibold", rankingMode === value ? "text-[var(--green-d)]" : "text-[var(--ink-0)]")}>
                     {label}
@@ -215,7 +224,7 @@ export default function SubmitPage() {
               <p className="text-[11px] text-[var(--ink-3)]">최대 3명 선택 가능 · {selectedPersonas.length}명 선택됨</p>
             </div>
           </div>
-          <div className="border border-[var(--line)] rounded bg-white divide-y divide-[var(--line)]">
+          <div className="border border-[var(--line)] rounded bg-[var(--card)] divide-y divide-[var(--line)]">
             {personas.map((p) => (
               <PersonaCard key={p.id} persona={p}
                 selected={selectedPersonas.includes(p.id)}
@@ -235,7 +244,7 @@ export default function SubmitPage() {
       {/* Step 4: 확인 및 제출 */}
       {step === 4 && (
         <div className="space-y-3">
-          <div className="border border-[var(--line)] rounded bg-white divide-y divide-[var(--line)]">
+          <div className="border border-[var(--line)] rounded bg-[var(--card)] divide-y divide-[var(--line)]">
             <div className="px-5 py-3 flex justify-between items-center">
               <span className="text-[13px] text-[var(--ink-2)]">파일</span>
               <span className="text-[13px] font-medium">{file?.name}</span>
@@ -246,7 +255,7 @@ export default function SubmitPage() {
             </div>
             <div className="px-5 py-3 flex justify-between items-center">
               <span className="text-[13px] text-[var(--ink-2)]">장르</span>
-              <span className="text-[13px] font-medium">{genre}</span>
+              <span className="text-[13px] font-medium">{musicGenreLabel(genre)}</span>
             </div>
             <div className="px-5 py-3 flex justify-between items-center">
               <span className="text-[13px] text-[var(--ink-2)]">참가 방식</span>

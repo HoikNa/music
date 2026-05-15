@@ -9,17 +9,22 @@ import { RankingRow } from "@/components/ranking/RankingRow"
 import { ScoreboardTimer } from "@/components/ranking/ScoreboardTimer"
 import { queryKeys } from "@/lib/queryKeys"
 import { api } from "@/lib/api"
+import { MUSIC_GENRE_FILTERS } from "@/lib/musicGenres"
 import type { WeeklyRanking, Persona } from "@/types/api"
 import { useAuthStore } from "@/stores/auth.store"
 
 export default function RankingsPage() {
   const { user } = useAuthStore()
   const [personaId, setPersonaId] = useState<string | undefined>(undefined)
+  const [genre, setGenre] = useState<string | undefined>(undefined)
   const [selected, setSelected] = useState<Set<string>>(new Set())
 
   const { data: ranking, isLoading, refetch, isFetching } = useQuery({
-    queryKey: queryKeys.rankings.weekly(personaId),
-    queryFn: () => api.get<WeeklyRanking>("/rankings/weekly", personaId ? { persona_id: personaId } : {}),
+    queryKey: queryKeys.rankings.weekly(personaId, genre),
+    queryFn: () => api.get<WeeklyRanking>("/rankings/weekly", {
+      ...(personaId ? { persona_id: personaId } : {}),
+      ...(genre ? { genre } : {}),
+    }),
   })
 
   const { data: personasData } = useQuery({
@@ -84,6 +89,26 @@ export default function RankingsPage() {
         </TabsList>
       </Tabs>
 
+      <div className="flex gap-1.5 overflow-x-auto pb-1">
+        {MUSIC_GENRE_FILTERS.map((item) => {
+          const active = (genre ?? "all") === item.code
+          return (
+            <button
+              key={item.code}
+              type="button"
+              onClick={() => setGenre(item.code === "all" ? undefined : item.code)}
+              className={`shrink-0 rounded-full border px-3 py-1 text-[12px] font-medium transition-colors ${
+                active
+                  ? "border-[var(--green)] bg-[var(--green-bg)] text-[var(--green-d)]"
+                  : "border-[var(--line)] text-[var(--ink-2)] hover:border-[var(--green)]"
+              }`}
+            >
+              {item.label}
+            </button>
+          )
+        })}
+      </div>
+
       {/* Chart table */}
       {isLoading ? (
         <div className="space-y-0 border border-[var(--line)] rounded">
@@ -117,12 +142,12 @@ export default function RankingsPage() {
             <span className="hidden lg:block">좋아요</span>
             <div className="flex gap-1">
               <button
-                className="flex items-center gap-1 rounded border border-[var(--line)] bg-white px-2 h-6 text-[11px] font-medium text-[var(--ink-1)] hover:bg-[var(--tint)] transition-colors"
+                className="flex items-center gap-1 rounded border border-[var(--line)] bg-[var(--card)] px-2 h-6 text-[11px] font-medium text-[var(--ink-1)] hover:bg-[var(--tint)] transition-colors"
               >
                 <Play className="size-3 fill-current" />전체듣기
               </button>
               <button
-                className="flex items-center gap-1 rounded border border-[var(--line)] bg-white px-2 h-6 text-[11px] font-medium text-[var(--ink-1)] hover:bg-[var(--tint)] transition-colors"
+                className="flex items-center gap-1 rounded border border-[var(--line)] bg-[var(--card)] px-2 h-6 text-[11px] font-medium text-[var(--ink-1)] hover:bg-[var(--tint)] transition-colors"
               >
                 <Plus className="size-3" />담기
               </button>
@@ -151,7 +176,7 @@ export default function RankingsPage() {
       {/* Sticky my rank */}
       {ranking?.my_entry && (
         <div className="fixed bottom-4 left-1/2 -translate-x-1/2 z-50 w-full max-w-[640px] px-4">
-          <div className="rounded border-2 border-[var(--green)] bg-white shadow-lg overflow-hidden">
+          <div className="rounded border-2 border-[var(--green)] bg-[var(--card)] shadow-lg overflow-hidden">
             <div className="px-3 py-1 bg-[var(--green)] text-white text-[11px] font-bold text-center">
               내 현재 순위
             </div>

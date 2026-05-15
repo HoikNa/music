@@ -18,5 +18,8 @@ export const queryKeys = {
     transactions: (cursor?: string) =>
       ["credits", "transactions", cursor] as const,
   },
+  ai: {
+    assets: () => ["ai", "assets"] as const,
+  },
   me: () => ["me"] as const,
 }

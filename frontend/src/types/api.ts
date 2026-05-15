@@ -44,24 +44,33 @@ export interface Feedback {
   summary: string
   strengths: { timestamp: string; description: string }[]
   improvements: { timestamp: string; description: string }[]
+  audio_url: string | null
+  audio_status: "queued" | "running" | "succeeded" | "failed" | "skipped"
+  audio_model: string | null
+  audio_error: string | null
+  audio_generated_at: string | null
 }
 
 export interface PersonaScore {
   persona_id: string
   persona_name: string
   score: number
-  feedback: Feedback
+  feedback: Feedback | null
 }
 
 export interface Submission {
   id: string
   title: string
   genre: string
+  genre_label?: string
   audio_url: string
   duration_sec: number
   status: SubmissionStatus
   reject_reason: string | null
   ranking_mode: RankingMode
+  is_ranking_excluded?: boolean
+  abuse_risk_score?: number
+  abuse_flags?: Record<string, unknown> | null
   base_score: BaseScore | null
   persona_scores: PersonaScore[]
   created_at: string
@@ -79,7 +88,25 @@ export interface RankingEntry {
   // chart display extensions
   cover_image_url?: string | null
   genre?: string
+  genre_label?: string | null
   like_count?: number
+}
+
+export interface MusicGenre {
+  code: string
+  label: string
+}
+
+export interface MusicGenreGroup {
+  code: string
+  label: string
+  description: string
+  children: MusicGenre[]
+}
+
+export interface MusicGenreResponse {
+  groups: MusicGenreGroup[]
+  items: MusicGenre[]
 }
 
 export interface RankingPeriod {
@@ -105,6 +132,25 @@ export interface AuthTokens {
   access_token: string
   refresh_token?: string  // HttpOnly 쿠키로 전달되므로 응답 바디에 없을 수 있음
   token_type: string
+}
+
+export interface GeneratedAsset {
+  id: string
+  asset_type: "lyrics" | "composition" | "mastering"
+  status: "queued" | "running" | "succeeded" | "failed" | "skipped"
+  provider: string
+  model: string | null
+  prompt: string | null
+  input_data: Record<string, unknown> | null
+  output_text: string | null
+  output_url: string | null
+  source_submission_id: string | null
+  error_message: string | null
+  created_at: string
+}
+
+export interface GeneratedAssetsResponse {
+  items: GeneratedAsset[]
 }
 
 export interface ApiError {

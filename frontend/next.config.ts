@@ -1,6 +1,13 @@
 import type { NextConfig } from "next"
 import { withSentryConfig } from "@sentry/nextjs"
 
+const DEFAULT_API_PROXY_TARGET = "https://ity0jkac22.execute-api.ap-northeast-2.amazonaws.com"
+
+function normalizeApiProxyTarget() {
+  const configured = process.env.API_PROXY_TARGET ?? process.env.NEXT_PUBLIC_API_URL
+  return (configured ?? DEFAULT_API_PROXY_TARGET).replace(/\/api\/v1\/?$/, "").replace(/\/$/, "")
+}
+
 const securityHeaders = [
   { key: "X-Frame-Options", value: "SAMEORIGIN" },
   { key: "X-Content-Type-Options", value: "nosniff" },
@@ -26,6 +33,14 @@ const securityHeaders = [
 ]
 
 const nextConfig: NextConfig = {
+  async rewrites() {
+    return [
+      {
+        source: "/api/v1/:path*",
+        destination: `${normalizeApiProxyTarget()}/api/v1/:path*`,
+      },
+    ]
+  },
   async headers() {
     return [{ source: "/(.*)", headers: securityHeaders }]
   },

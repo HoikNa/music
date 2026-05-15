@@ -1,6 +1,7 @@
 import { Badge } from "@/components/ui/badge"
 import { Check, Mic2 } from "lucide-react"
 import type { Persona } from "@/types/api"
+import { musicGenreLabel } from "@/lib/musicGenres"
 import { cn } from "@/lib/utils"
 
 const DIMENSION_LABELS: Record<string, string> = {
@@ -22,7 +23,7 @@ export function PersonaCard({ persona, selected = false, onClick }: PersonaCardP
         "w-full text-left rounded-lg border p-5 transition-all",
         selected
           ? "border-[var(--brand)] bg-[var(--brand-bg)] shadow-sm"
-          : "border-[var(--border)] bg-white/80 hover:border-[var(--brand-light)] hover:shadow-sm"
+          : "border-[var(--border)] bg-[var(--card)] hover:border-[var(--brand-light)] hover:shadow-sm"
       )}
     >
       <div className="flex items-start gap-4">
@@ -32,7 +33,7 @@ export function PersonaCard({ persona, selected = false, onClick }: PersonaCardP
         <div className="flex-1 min-w-0">
           <div className="flex items-center gap-2 flex-wrap">
             <p className="font-bold text-base">{persona.display_name}</p>
-            <Badge variant="secondary" className="text-xs">{persona.genre}</Badge>
+            <Badge variant="secondary" className="text-xs">{musicGenreLabel(persona.genre)}</Badge>
             {selected && (
               <Badge className="gap-1 text-xs" style={{ background: "var(--brand)" }}>
                 <Check className="size-3" />

@@ -1,8 +1,10 @@
+"use client"
+
 import Image from "next/image"
+import { useState } from "react"
 import { Play, Heart, Search } from "lucide-react"
 import { mockWeeklyRanking } from "@/lib/mocks/data"
-
-const GENRES = ["전체", "발라드", "팝", "R&B", "힙합", "록", "인디", "트로트", "재즈"]
+import { MUSIC_GENRE_FILTERS, musicGenreLabel } from "@/lib/musicGenres"
 
 function CoverCard({ url, title, artist, genre, score }: {
   url?: string | null; title: string; artist: string; genre?: string; score: number
@@ -53,14 +55,17 @@ function CoverCard({ url, title, artist, genre, score }: {
 }
 
 export default function ExplorePage() {
-  const songs = mockWeeklyRanking.entries
+  const [genre, setGenre] = useState("all")
+  const songs = genre === "all"
+    ? mockWeeklyRanking.entries
+    : mockWeeklyRanking.entries.filter((entry) => entry.genre === genre)
 
   return (
     <div className="space-y-5">
       {/* Header */}
       <div className="flex flex-wrap items-center justify-between gap-3">
         <h1 className="text-[20px] font-black">최신음악</h1>
-        <div className="flex items-center gap-2 rounded border border-[var(--line)] bg-[var(--tint)] px-3 h-9 focus-within:border-[var(--green)] focus-within:bg-white w-64 transition-colors">
+        <div className="flex items-center gap-2 rounded border border-[var(--line)] bg-[var(--tint)] px-3 h-9 focus-within:border-[var(--green)] focus-within:bg-[var(--card)] w-64 transition-colors">
           <Search className="size-4 text-[var(--ink-3)] shrink-0" />
           <input className="w-full bg-transparent text-[13px] outline-none placeholder:text-[var(--ink-3)]"
             placeholder="곡명, 아티스트 검색" />
@@ -69,10 +74,17 @@ export default function ExplorePage() {
 
       {/* Genre filter */}
       <div className="flex gap-1.5 flex-wrap">
-        {GENRES.map((g) => (
-          <button key={g}
-            className="rounded-full border border-[var(--line)] px-3 py-1 text-[12px] font-medium text-[var(--ink-2)] hover:border-[var(--green)] hover:text-[var(--green-d)] transition-colors first:border-[var(--green)] first:text-[var(--green-d)] first:bg-[var(--green-bg)]">
-            {g}
+        {MUSIC_GENRE_FILTERS.map((g) => (
+          <button
+            key={g.code}
+            type="button"
+            onClick={() => setGenre(g.code)}
+            className={`rounded-full border px-3 py-1 text-[12px] font-medium transition-colors ${
+              genre === g.code
+                ? "border-[var(--green)] bg-[var(--green-bg)] text-[var(--green-d)]"
+                : "border-[var(--line)] text-[var(--ink-2)] hover:border-[var(--green)] hover:text-[var(--green-d)]"
+            }`}>
+            {g.label}
           </button>
         ))}
       </div>
@@ -93,7 +105,7 @@ export default function ExplorePage() {
               url={e.cover_image_url}
               title={e.title}
               artist={e.nickname}
-              genre={e.genre}
+              genre={e.genre_label ?? musicGenreLabel(e.genre)}
               score={e.score}
             />
           ))}
@@ -119,7 +131,7 @@ export default function ExplorePage() {
               </div>
               <div className="flex-1 min-w-0">
                 <p className="text-[13px] font-medium truncate">{e.title}</p>
-                <p className="text-[12px] text-[var(--ink-3)] truncate">{e.nickname} · {e.genre}</p>
+                <p className="text-[12px] text-[var(--ink-3)] truncate">{e.nickname} · {e.genre_label ?? musicGenreLabel(e.genre)}</p>
               </div>
               <div className="flex items-center gap-3 text-[12px] text-[var(--ink-3)] shrink-0">
                 <span className="flex items-center gap-1"><Heart className="size-3" />{(e.like_count ?? 0).toLocaleString()}</span>

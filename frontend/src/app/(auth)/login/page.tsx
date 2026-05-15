@@ -39,7 +39,7 @@ function LoginForm() {
 
   return (
     <div className="auth-surface flex min-h-screen items-center justify-center px-4 py-10">
-      <div className="w-full max-w-md">
+      <div className="w-full max-w-[20rem] sm:max-w-md">
         <div className="mb-8 text-center">
           <Link href="/" className="inline-flex items-center gap-3">
             <span className="brand-gradient flex size-10 items-center justify-center rounded-lg text-white shadow-md">
@@ -52,7 +52,7 @@ function LoginForm() {
           <p className="mt-3 text-sm text-[var(--text-muted)]">다시 만나서 반가워요</p>
         </div>
 
-        <div className="app-card-lift p-8">
+        <div className="app-card-lift overflow-hidden p-8">
           <div className="mb-6">
             <h1 className="text-2xl font-black">로그인</h1>
             <p className="mt-1 text-sm text-[var(--text-muted)]">보컬 심사와 랭킹 현황을 이어서 확인하세요.</p>
@@ -93,11 +93,11 @@ function LoginForm() {
               <div className="w-full border-t border-[var(--border)]" />
             </div>
             <div className="relative flex justify-center text-xs">
-              <span className="bg-white px-3 text-[var(--text-muted)]">또는</span>
+              <span className="bg-[var(--card)] px-3 text-[var(--text-muted)]">또는</span>
             </div>
           </div>
 
-          <Button variant="outline" className="w-full rounded-full bg-white/70" disabled>
+          <Button variant="outline" className="w-full rounded-full bg-[var(--tint)]" disabled>
             카카오로 로그인 (준비중)
           </Button>
         </div>

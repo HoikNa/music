@@ -4,6 +4,7 @@ import Image from "next/image"
 import { Heart, Play, Plus } from "lucide-react"
 import { RankBadge } from "./RankBadge"
 import type { RankingEntry } from "@/types/api"
+import { musicGenreLabel } from "@/lib/musicGenres"
 import { cn } from "@/lib/utils"
 
 interface RankingRowProps {
@@ -91,7 +92,9 @@ export function RankingRow({ entry, isMe = false, selected = false, onSelect }: 
       </div>
 
       {/* Genre */}
-      <div className="hidden md:block text-[12px] text-[var(--ink-3)] truncate">{entry.genre ?? ""}</div>
+      <div className="hidden md:block text-[12px] text-[var(--ink-3)] truncate">
+        {entry.genre_label ?? musicGenreLabel(entry.genre)}
+      </div>
 
       {/* Score */}
       <div className="text-[13px] font-bold tabular-nums text-[var(--green-d)] text-right pr-2">

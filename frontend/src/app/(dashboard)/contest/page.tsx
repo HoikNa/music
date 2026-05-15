@@ -1,11 +1,12 @@
 import { ChevronRight, Clock3, Trophy, Upload, Users } from "lucide-react"
 import { mockWeeklyRanking } from "@/lib/mocks/data"
+import { musicGenreLabel } from "@/lib/musicGenres"
 
 const CONTESTS = [
   { id: 1, title: "Spring 2026 보컬 챔피언십", genre: "전체", deadline: "D-7", prize: "12,000,000", participants: 1284, status: "진행중" },
-  { id: 2, title: "발라드 클래식 경연", genre: "발라드", deadline: "D-14", prize: "5,000,000", participants: 831, status: "진행중" },
-  { id: 3, title: "R&B 소울 페스티벌", genre: "R&B", deadline: "D-21", prize: "3,000,000", participants: 447, status: "모집중" },
-  { id: 4, title: "인디 뮤직 위크", genre: "인디", deadline: "D-28", prize: "2,000,000", participants: 203, status: "모집중" },
+  { id: 2, title: "Pop / Pop Ballard 경연", genre: "Pop / Pop Ballard", deadline: "D-14", prize: "5,000,000", participants: 831, status: "진행중" },
+  { id: 3, title: "R&B / Soul 페스티벌", genre: "R&B / Soul", deadline: "D-21", prize: "3,000,000", participants: 447, status: "모집중" },
+  { id: 4, title: "Folk 뮤직 위크", genre: "Folk", deadline: "D-28", prize: "2,000,000", participants: 203, status: "모집중" },
 ]
 
 export default function ContestPage() {
@@ -68,7 +69,7 @@ export default function ContestPage() {
         </div>
 
         {/* Column header */}
-        <div className="grid items-center px-5 py-2 gap-3 bg-white border-b border-[var(--line)] text-[11px] font-medium text-[var(--ink-3)] uppercase tracking-wide"
+        <div className="grid items-center px-5 py-2 gap-3 bg-[var(--tint)] border-b border-[var(--line)] text-[11px] font-medium text-[var(--ink-3)] uppercase tracking-wide"
           style={{ gridTemplateColumns: "32px 1fr 64px 56px 80px" }}>
           <span className="text-center">순위</span>
           <span>곡명 / 참가자</span>
@@ -88,7 +89,7 @@ export default function ContestPage() {
               <p className="text-[13px] font-medium truncate">{e.title}</p>
               <p className="text-[12px] text-[var(--ink-3)] truncate">{e.nickname}</p>
             </div>
-            <span className="hidden sm:block text-[12px] text-[var(--ink-3)] truncate">{e.genre}</span>
+            <span className="hidden sm:block text-[12px] text-[var(--ink-3)] truncate">{e.genre_label ?? musicGenreLabel(e.genre)}</span>
             <span className="text-[13px] font-bold text-[var(--green-d)] tabular-nums text-right pr-2">
               {e.score.toFixed(1)}
             </span>

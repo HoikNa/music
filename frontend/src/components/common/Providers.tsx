@@ -5,7 +5,7 @@ import { QueryClient, QueryClientProvider } from "@tanstack/react-query"
 import { ReactQueryDevtools } from "@tanstack/react-query-devtools"
 import { useState, useEffect, type ReactNode } from "react"
 import { Toaster } from "@/components/ui/sonner"
-import { getAccessToken, setAccessToken } from "@/lib/api"
+import { getAccessToken, getApiBaseUrl, setAccessToken } from "@/lib/api"
 import { useAuthStore } from "@/stores/auth.store"
 import type { User } from "@/types/api"
 
@@ -27,7 +27,7 @@ export function Providers({ children }: { children: ReactNode }) {
   const { setAccessTokenAndUser, setUser } = useAuthStore()
 
   useEffect(() => {
-    const baseURL = process.env.NEXT_PUBLIC_API_URL ?? "http://localhost:8000/api/v1"
+    const baseURL = getApiBaseUrl()
 
     const restoreSession = async () => {
       // 1순위: sessionStorage 토큰 (하드 리로드 후에도 유지)

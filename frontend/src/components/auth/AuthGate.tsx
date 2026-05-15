@@ -4,17 +4,27 @@ import { useEffect, type ReactNode } from "react"
 import { usePathname } from "next/navigation"
 import { useAuthStore } from "@/stores/auth.store"
 
-export function AuthGate({ children }: { children: ReactNode }) {
+interface AuthGateProps {
+  children: ReactNode
+  publicPaths?: string[]
+}
+
+export function AuthGate({ children, publicPaths = [] }: AuthGateProps) {
   const pathname = usePathname()
   const { user, isLoading } = useAuthStore()
+  const isPublicPath = publicPaths.some((path) => pathname === path || pathname.startsWith(`${path}/`))
 
   useEffect(() => {
-    if (isLoading || user) return
+    if (isPublicPath || isLoading || user) return
 
     const query = window.location.search.replace(/^\?/, "")
     const redirect = `${pathname}${query ? `?${query}` : ""}`
     window.location.replace(`/login?redirect=${encodeURIComponent(redirect)}`)
-  }, [isLoading, pathname, user])
+  }, [isLoading, isPublicPath, pathname, user])
+
+  if (isPublicPath) {
+    return <>{children}</>
+  }
 
   if (isLoading) {
     return (
