@@ -7,13 +7,21 @@ from urllib.parse import urlparse
 from app.config import settings
 
 
-def _download_from_s3(audio_url: str, dest_path: str) -> None:
-    import boto3
-
+def _download_audio(audio_url: str, dest_path: str) -> None:
     parsed = urlparse(audio_url)
-    bucket = parsed.netloc.split(".")[0]
-    key = parsed.path.lstrip("/")
-    boto3.client("s3", region_name=settings.aws_region).download_file(bucket, key, dest_path)
+    if "amazonaws.com" in parsed.netloc or parsed.scheme == "s3":
+        import boto3
+
+        if parsed.scheme == "s3":
+            bucket, key = parsed.netloc, parsed.path.lstrip("/")
+        else:
+            bucket = parsed.netloc.split(".")[0]
+            key = parsed.path.lstrip("/")
+        boto3.client("s3", region_name=settings.aws_region).download_file(bucket, key, dest_path)
+    else:
+        import urllib.request
+
+        urllib.request.urlretrieve(audio_url, dest_path)
 
 
 def _upload_to_s3(source_path: str, key: str) -> str:
@@ -45,7 +53,7 @@ def master_audio(audio_url: str, user_id: str, target_lufs: float | None = None)
     output_tmp.close()
 
     try:
-        _download_from_s3(audio_url, input_tmp.name)
+        _download_audio(audio_url, input_tmp.name)
         subprocess.run(
             [
                 ffmpeg,
